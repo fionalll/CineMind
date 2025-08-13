@@ -1,0 +1,487 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Varsayılan tema (Mevcut Dark) */
+  :root {
+  --background-primary: #111827;
+  --background-secondary: #1f2937;
+  --background-tertiary: #374151;
+  --background-sidebar: #181f2a; /* Sidebar için özel arka plan (default koyu mavi-gri) */
+  --text-primary: #ffffff;
+  --text-secondary: #d1d5db;
+  --text-muted: #9ca3af;
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --border-color: #4b5563;
+  --accent: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --success: #10b981;
+  }
+
+  /* Tema 4: Sunset Warmth */
+  [data-theme='Sunset Warmth'] {
+    --background-primary: #3b2f2f;    /* Koyu kahverengi alt tonlu koyu arka plan */
+    --background-secondary: #523c2f;  /* Orta kahverengi-turuncu alt tonlu */
+    --background-tertiary: #6b4a30;   /* Açık kahverengi-turuncu alt tonlu */
+    --background-sidebar: #4a2e1e;    /* Sidebar için özel sıcak kahve-turuncu */
+    
+    --text-primary: #f1d7b8;          /* Krem-bej, yumuşak okunabilir */
+    --text-secondary: #d9a756;        /* Pastel hardal sarısı */
+    --text-muted: #b98b58;            /* Soluk toprak sarısı */
+    
+    --primary: #d65a31;               /* Yumuşak turuncu-kırmızı */
+    --primary-hover: #b34928;         /* Biraz koyu vurgu */
+    
+    --border-color: #d9a756;          /* Sıcak sarı-kahve sınır */
+    --accent: #f4c38d;                /* Açık krem-turuncu alt ton */
+    
+    --warning: #e3b86c;               /* Pastel hardal sarısı */
+    --error: #c75b5b;                 /* Yumuşak tuğla kırmızısı */
+    --success: #7d9d74;               /* Yeşil ton */
+  }
+
+  /* Tema 1: Coffee */
+  [data-theme='Coffee'] {
+    --background-primary: #2b2623;    /* Koyu kahve-siyah karışımı */
+    --background-secondary: #3b352f;  /* Orta koyu kahve */
+    --background-tertiary: #4a423a;   /* Yumuşak kahve-gri ton */
+    --background-sidebar: #332b25;    /* Sidebar için özel koyu kahve */
+    
+    --text-primary: #d7cdc6;          /* Açık krem-bej */
+    --text-secondary: #b6aca4;        /* Soft bej-gri */
+    --text-muted: #9e958e;            /* Soluk kahve-gri */
+    
+    --primary: #6a7f71;               /* Koyu soft zeytin yeşili */
+    --primary-hover: #586858;         /* Daha koyu zeytin yeşili */
+    
+    --border-color: #978b80;          /* Yumuşak kahve sınır */
+    --accent: #7a6f63;                /* Orta kahve-bej aksan */
+    
+    --warning: #b7965f;               /* Sıcak pastel hardal */
+    --error: #a05252;                 /* Mat tuğla kırmızısı */
+    --success: #7a8f7b;               /* Yeşil ton */
+  }
+
+  /* Tema 2: Toprak Yeşili */
+  [data-theme='earthy-green'] {
+    --background-primary: #162a1a;    /* Çok koyu zeytin yeşili */
+    --background-secondary: #203623;  /* Koyu orman yeşili */
+    --background-tertiary: #2a432d;   /* Koyu yaprak yeşili */
+    --background-sidebar: #1c2e1e;    /* Sidebar için özel koyu yeşil */
+    
+    --text-primary: #c9d6ca;          /* Yumuşak açık yeşil-gri */
+    --text-secondary: #a3b9a4;        /* Pastel yeşil */
+    --text-muted: #7d8b79;            /* Soluk zeytin yeşili */
+    
+    --primary: #7ea384;               /* Soft nane yeşili */
+    --primary-hover: #6b8a73;         /* Biraz daha koyu nane yeşili */
+    
+    --border-color: #a3b9a4;          /* Pastel yeşil kenar */
+    --accent: #9dbba7;                /* Hafif gri-yeşil */
+    
+    --warning: #c8a15c;               /* Pastel altın turuncu */
+    --error: #a76d6d;                 /* Pastel kırmızımsı kahve */
+    --success: #7ea384;               /* Yeşil ton */
+  }
+
+  /* Tema 3: Tutkulu Mor */
+  [data-theme='passionate-purple'] {
+    --background-primary: #3b2f2f;    /* Koyu kahverengi */
+    --background-secondary: #5c4a47;  /* Orta kahverengi */
+    --background-tertiary: #7b6a65;   /* Açık kahverengi */
+    --background-sidebar: #4a3a36;    /* Sidebar için özel morumsu kahve */
+    
+    --text-primary: #d9c9b8;          /* Açık bej / krem */
+    --text-secondary: #b39c85;        /* Soft kahve tonu */
+    --text-muted: #8b7a6b;            /* Soluk kahve */
+    
+    --primary: #a9746e;               /* Koyu toprak kahvesi */
+    --primary-hover: #8a625d;         /* Biraz koyu vurgu */
+    
+    --border-color: #b39c85;          /* Bej kahve sınır */
+    --accent: #c9b89b;                /* Açık toprak rengi */
+    
+    --warning: #d98840;               /* Soft turuncu */
+    --error: #b7413e;                 /* Koyu kırmızımsı kahve */
+    --success: #7b9a6a;               /* Yeşil ton */
+  }
+
+  /* Tema 4: Pudra Pembesi */
+  [data-theme='dusty-pink'] {
+    --background-primary: #fff3f5;    /* Çok açık pembe-pudra */
+    --background-secondary: #f9dde0;  /* Pastel pembe alt ton */
+    --background-tertiary: #f4c7cb;   /* Yumuşak gül kurusu */
+    --background-sidebar: #f3c2c9;    /* Sidebar için özel pudra pembe */
+    
+    --text-primary: #5c4147;          /* Koyu gül kurusu, okunaklı */
+    --text-secondary: #7e575e;        /* Orta koyulukta pembe-kahve */
+    --text-muted: #a1868f;            /* Soluk pembe-kahve */
+    
+    --primary: #d88c97;               /* Ana vurgu: tatlı pembe */
+    --primary-hover: #c07883;         /* Hover için koyu pembe */
+    
+    --border-color: #e1a2aa;          /* Açık pembe sınır */
+    --accent: #f0b7bc;                /* Yumuşak pembe aksan */
+    
+    --warning: #f4b183;               /* Pastel turuncu */
+    --error: #d1606a;                 /* Yumuşak kırmızı */
+    --success: #7a9e7e;               /* Yeşil ton */
+  }
+
+  /* Global HTML ve Body stilleri */
+  html {
+    background-color: var(--background-primary);
+    transition: background-color 0.3s ease;
+  }
+
+  body {
+    background-color: var(--background-primary);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, sans-serif;
+    transition: all 0.3s ease;
+  }
+
+  /* Global element stilleri */
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--text-primary);
+    transition: color 0.3s ease;
+  }
+
+  p {
+    color: var(--text-secondary);
+    transition: color 0.3s ease;
+  }
+
+  a {
+    color: var(--primary);
+    transition: color 0.3s ease;
+  }
+
+  a:hover {
+    color: var(--primary-hover);
+  }
+}
+
+@layer components {
+  /* Page Layout */
+  .page-container {
+    min-height: 100vh;
+    background-color: var(--background-primary);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+  }
+
+  .page-content {
+    background-color: var(--background-primary);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+  }
+
+  .btn-primary {
+    background-color: var(--primary);
+    color: var(--text-primary);
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+    border: 1px solid var(--primary);
+  }
+  
+  .btn-primary:hover {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+  
+  .btn-secondary {
+    background-color: var(--background-tertiary);
+    color: var(--text-primary);
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+  }
+  
+  .btn-secondary:hover {
+    background-color: var(--background-secondary);
+    border-color: var(--primary);
+    transform: translateY(-1px);
+  }
+  
+  .card {
+    background-color: var(--background-secondary);
+    border-radius: 0.75rem;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+
+  .card:hover {
+    border-color: var(--primary);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+  
+  .input-field {
+    background-color: var(--background-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+  }
+
+  .input-field::placeholder {
+    color: var(--text-muted);
+  }
+
+  .input-field:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(var(--primary), 0.1);
+    background-color: var(--background-tertiary);
+  }
+
+  /* Navigation styles */
+  .navbar {
+    background-color: var(--background-secondary);
+    border-bottom: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+  }
+
+  .navbar-brand {
+    color: var(--text-primary);
+    font-weight: bold;
+    transition: color 0.3s ease;
+  }
+
+  .navbar-brand:hover {
+    color: var(--primary);
+  }
+
+  .navbar-link {
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+  }
+
+  .navbar-link:hover {
+    color: var(--text-primary);
+    background-color: var(--background-tertiary);
+  }
+
+  .navbar-link.active {
+    color: var(--text-primary);
+    background-color: var(--primary);
+  }
+
+  /* Sidebar styles */
+  .sidebar {
+    background-color: var(--background-secondary);
+    border-right: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+  }
+
+  .sidebar-item {
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin: 0.25rem 0;
+    border: 1px solid transparent;
+  }
+
+  .sidebar-item:hover {
+    color: var(--text-primary);
+    background-color: var(--background-tertiary);
+    border-color: var(--border-color);
+  }
+
+  .sidebar-item.active {
+    color: var(--text-primary);
+    background-color: var(--primary);
+    border-color: var(--primary);
+  }
+
+  /* Movie card styles */
+  .movie-card {
+    background-color: var(--background-secondary);
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+    border-radius: 0.75rem;
+    overflow: hidden;
+  }
+
+  .movie-card:hover {
+    transform: scale(1.05);
+    border-color: var(--primary);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+  }
+
+  .movie-title {
+    color: var(--text-primary);
+    font-weight: 600;
+    transition: color 0.3s ease;
+  }
+
+  .movie-subtitle {
+    color: var(--text-secondary);
+    transition: color 0.3s ease;
+  }
+
+  .movie-meta {
+    color: var(--text-muted);
+    transition: color 0.3s ease;
+  }
+
+  /* Hero section */
+  .hero-section {
+    background: linear-gradient(135deg, var(--background-primary) 0%, var(--background-secondary) 100%);
+    transition: background 0.3s ease;
+  }
+
+  .hero-title {
+    color: var(--text-primary);
+    transition: color 0.3s ease;
+  }
+
+  .hero-subtitle {
+    color: var(--text-secondary);
+    transition: color 0.3s ease;
+  }
+
+  /* Chat interface */
+  .chat-container {
+    background-color: var(--background-secondary);
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+  }
+
+  .chat-message {
+    transition: all 0.3s ease;
+  }
+
+  .chat-message.user {
+    background-color: var(--primary);
+    color: var(--text-primary);
+  }
+
+  .chat-message.bot {
+    background-color: var(--background-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+  }
+
+  /* Form elements */
+  .form-label {
+    color: var(--text-primary);
+    transition: color 0.3s ease;
+  }
+
+  .form-error {
+    color: var(--error);
+    background-color: rgba(var(--error), 0.1);
+    border: 1px solid var(--error);
+    transition: all 0.3s ease;
+  }
+
+  .form-success {
+    color: var(--success);
+    background-color: rgba(var(--success), 0.1);
+    border: 1px solid var(--success);
+    transition: all 0.3s ease;
+  }
+
+  .line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+  }
+
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+
+  /* Text colors */
+  .text-primary {
+    color: var(--text-primary);
+  }
+
+  .text-secondary {
+    color: var(--text-secondary);
+  }
+
+  .text-muted {
+    color: var(--text-muted);
+  }
+
+
+  /* Background colors */
+  .bg-primary {
+    background-color: var(--background-primary);
+  }
+
+  .bg-secondary {
+    background-color: var(--background-secondary);
+  }
+
+  .bg-tertiary {
+    background-color: var(--background-tertiary);
+  }
+
+  .sidebar-bg {
+    background-color: var(--background-sidebar);
+  }
+
+  .border-default {
+    border-color: var(--border-color);
+  }
+
+  /* Loading States */
+  .loading-spinner {
+    border-color: var(--border-color);
+    border-top-color: var(--primary);
+  }
+
+  /* Gradient backgrounds */
+  .gradient-bg {
+    background: linear-gradient(135deg, var(--background-primary) 0%, var(--background-secondary) 50%, var(--background-tertiary) 100%);
+  }
+
+  /* Backdrop blur for overlays */
+  .backdrop-overlay {
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+  }
+
+  /* Scrollbar gizleme */
+  .scrollbar-hide {
+    /* Firefox */
+    scrollbar-width: none;
+    /* Safari ve Chrome */
+    -ms-overflow-style: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
