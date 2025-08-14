@@ -233,6 +233,8 @@
     padding: 0.5rem 1rem;
     color: var(--text-primary);
     transition: all 0.3s ease;
+    overflow: hidden; /* Scrollbar'ı gizle */
+    white-space: nowrap; /* Tek satırda tut */
   }
 
   .input-field::placeholder {
@@ -242,7 +244,7 @@
   .input-field:focus {
     border-color: var(--primary);
     outline: none;
-    box-shadow: 0 0 0 3px rgba(var(--primary), 0.1);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     background-color: var(--background-tertiary);
   }
 
@@ -483,5 +485,136 @@
   
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Modern scrollbar stilleri */
+  .custom-scrollbar {
+    /* Firefox için modern scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) var(--background-tertiary);
+  }
+
+  /* Webkit tabanlı tarayıcılar için (Chrome, Safari, Edge) */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: var(--background-tertiary);
+    border-radius: 10px;
+    margin: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--primary) 0%, var(--primary-hover) 100%);
+    border-radius: 10px;
+    border: 2px solid var(--background-tertiary);
+    transition: all 0.3s ease;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, var(--accent) 0%, var(--primary) 100%);
+    border-color: var(--background-secondary);
+    box-shadow: 0 0 8px rgba(var(--primary), 0.3);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:active {
+    background: var(--primary-hover);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-corner {
+    background: var(--background-tertiary);
+  }
+
+  /* Chatbot için özel ince scrollbar */
+  .chat-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) transparent;
+  }
+
+  .chat-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .chat-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 8px;
+  }
+
+  .chat-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--accent) 0%, var(--primary) 100%);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+  }
+
+  .chat-scrollbar::-webkit-scrollbar-thumb:hover {
+    opacity: 1;
+    background: linear-gradient(180deg, var(--primary) 0%, var(--accent) 100%);
+    box-shadow: 0 0 6px rgba(var(--accent), 0.4);
+  }
+
+  /* Film karusel alanı için horizontal scrollbar */
+  .carousel-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) var(--background-secondary);
+  }
+
+  .carousel-scrollbar::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .carousel-scrollbar::-webkit-scrollbar-track {
+    background: var(--background-secondary);
+    border-radius: 10px;
+    margin: 0 8px;
+  }
+
+  .carousel-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+    border-radius: 10px;
+    transition: all 0.3s ease;
+  }
+
+  .carousel-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(90deg, var(--accent) 0%, var(--primary) 100%);
+    box-shadow: 0 0 8px rgba(var(--primary), 0.3);
+  }
+
+  /* Horizontal scrollbar for lists */
+  .horizontal-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) var(--background-secondary);
+    padding-bottom: 8px;
+  }
+
+  .horizontal-scroll::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .horizontal-scroll::-webkit-scrollbar-track {
+    background: var(--background-secondary);
+    border-radius: 10px;
+    margin: 0 8px;
+  }
+
+  .horizontal-scroll::-webkit-scrollbar-thumb {
+    background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    border: 2px solid var(--background-secondary);
+  }
+
+  .horizontal-scroll::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(90deg, var(--accent) 0%, var(--primary) 100%);
+    box-shadow: 0 0 8px rgba(var(--primary), 0.4);
+    border-color: var(--background-primary);
+  }
+
+  .horizontal-scroll::-webkit-scrollbar-corner {
+    background: var(--background-secondary);
   }
 }

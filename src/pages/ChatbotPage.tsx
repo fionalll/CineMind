@@ -73,8 +73,7 @@ const MoviePanel: React.FC = () => {
       
       <div 
         ref={scrollContainerRef}
-        className="flex overflow-x-auto space-x-4 p-2 flex-1 scrollbar-hide"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        className="flex overflow-x-auto space-x-4 p-2 flex-1 carousel-scrollbar"
       >
         {movies.map((movie: Movie) => (
           <div key={movie.id} className="flex-shrink-0 w-72">

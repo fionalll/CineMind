@@ -62,97 +62,100 @@ const ChatBot: React.FC = () => {
   };
 
   return (
-    <div className="card p-6 h-[600px] flex flex-col">
-      <div className="flex items-center mb-4 pb-4 border-b border-gray-700">
-        <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center mr-3">
+    <div className="flex flex-col h-full">
+      {/* Fixed Header */}
+      <div className="flex items-center mb-4 pb-4 border-b flex-shrink-0" style={{ borderColor: 'var(--border-color)' }}>
+        <div className="w-10 h-10 rounded-full flex items-center justify-center mr-3" style={{ backgroundColor: 'var(--primary)' }}>
           <span className="text-white font-bold">🤖</span>
         </div>
         <div>
-          <h2 className="text-xl font-bold text-white">CineMind AI</h2>
-          <p className="text-sm text-gray-400">Film Küratörünüz</p>
+          <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>CineMind AI</h2>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Film Küratörünüz</p>
         </div>
       </div>
 
-      {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2">
-        {chatMessages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex ${message.isUser ? 'justify-end' : 'justify-start'} animate-slide-up`}
-          >
+      {/* Chat Messages Container - Scrollable */}
+      <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-y-auto space-y-4 pr-2 chat-scrollbar">
+          {chatMessages.map((message) => (
             <div
-              className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                message.isUser
-                  ? 'text-white shadow-lg'
-                  : 'border shadow-sm'
-              }`}
-              style={{
-                backgroundColor: message.isUser 
-                  ? 'var(--accent)' 
-                  : 'var(--background-tertiary)',
-                borderColor: message.isUser 
-                  ? 'var(--accent)' 
-                  : 'var(--border-color)',
-                color: message.isUser 
-                  ? 'var(--text-primary)' 
-                  : 'var(--text-primary)'
-              }}
+              key={message.id}
+              className={`flex ${message.isUser ? 'justify-end' : 'justify-start'} animate-slide-up`}
             >
-              <p className="text-sm">{message.content}</p>
-              <p className="text-xs opacity-70 mt-1">
-                {message.timestamp.toLocaleTimeString('tr-TR', { 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
-                })}
-              </p>
-            </div>
-          </div>
-        ))}
-
-        {/* Loading indicator */}
-        {isLoading && (
-          <div className="flex justify-start animate-fade-in">
-            <div 
-              className="px-4 py-2 rounded-lg border shadow-sm"
-              style={{
-                backgroundColor: 'var(--background-tertiary)',
-                borderColor: 'var(--border-color)',
-                color: 'var(--text-primary)'
-              }}
-            >
-              <div className="flex items-center space-x-2">
-                <div className="flex space-x-1">
-                  <div 
-                    className="w-2 h-2 rounded-full animate-bounce"
-                    style={{ backgroundColor: 'var(--accent)' }}
-                  ></div>
-                  <div 
-                    className="w-2 h-2 rounded-full animate-bounce" 
-                    style={{ backgroundColor: 'var(--accent)', animationDelay: '0.1s' }}
-                  ></div>
-                  <div 
-                    className="w-2 h-2 rounded-full animate-bounce" 
-                    style={{ backgroundColor: 'var(--accent)', animationDelay: '0.2s' }}
-                  ></div>
-                </div>
-                <span className="text-sm">Yazıyor...</span>
+              <div
+                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                  message.isUser
+                    ? 'text-white shadow-lg'
+                    : 'border shadow-sm'
+                }`}
+                style={{
+                  backgroundColor: message.isUser 
+                    ? 'var(--accent)' 
+                    : 'var(--background-tertiary)',
+                  borderColor: message.isUser 
+                    ? 'var(--accent)' 
+                    : 'var(--border-color)',
+                  color: message.isUser 
+                    ? 'var(--text-primary)' 
+                    : 'var(--text-primary)'
+                }}
+              >
+                <p className="text-sm">{message.content}</p>
+                <p className="text-xs opacity-70 mt-1">
+                  {message.timestamp.toLocaleTimeString('tr-TR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}
+                </p>
               </div>
             </div>
-          </div>
-        )}
+          ))}
 
-        <div ref={chatEndRef} />
+          {/* Loading indicator */}
+          {isLoading && (
+            <div className="flex justify-start animate-fade-in">
+              <div 
+                className="px-4 py-2 rounded-lg border shadow-sm"
+                style={{
+                  backgroundColor: 'var(--background-tertiary)',
+                  borderColor: 'var(--border-color)',
+                  color: 'var(--text-primary)'
+                }}
+              >
+                <div className="flex items-center space-x-2">
+                  <div className="flex space-x-1">
+                    <div 
+                      className="w-2 h-2 rounded-full animate-bounce"
+                      style={{ backgroundColor: 'var(--accent)' }}
+                    ></div>
+                    <div 
+                      className="w-2 h-2 rounded-full animate-bounce" 
+                      style={{ backgroundColor: 'var(--accent)', animationDelay: '0.1s' }}
+                    ></div>
+                    <div 
+                      className="w-2 h-2 rounded-full animate-bounce" 
+                      style={{ backgroundColor: 'var(--accent)', animationDelay: '0.2s' }}
+                    ></div>
+                  </div>
+                  <span className="text-sm">Yazıyor...</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div ref={chatEndRef} />
+        </div>
       </div>
 
-      {/* Input Area */}
-      <div className="flex space-x-2">
-        <textarea
+      {/* Fixed Input Area */}
+      <div className="flex space-x-2 mt-4 flex-shrink-0">
+        <input
+          type="text"
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
           onKeyPress={handleKeyPress}
           placeholder="Hangi film tarzında öneriler istiyorsunuz? (örn: 'Inception gibi zihin büken filmler')"
-          className="input-field flex-1 resize-none h-12"
-          rows={1}
+          className="input-field flex-1 h-12 px-4 py-3"
           disabled={isLoading}
         />
         <button
@@ -166,9 +169,10 @@ const ChatBot: React.FC = () => {
         </button>
       </div>
 
+      {/* Error Message */}
       {error && (
         <div 
-          className="mt-2 p-2 rounded border text-sm"
+          className="mt-2 p-2 rounded border text-sm flex-shrink-0"
           style={{
             backgroundColor: 'var(--background-secondary)',
             borderColor: '#ef4444',

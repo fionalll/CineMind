@@ -90,3 +90,20 @@ export interface ApiError {
   error: string;
   details?: string;
 }
+
+export interface UserProfile {
+  id: string;
+  username: string;
+  displayName: string;
+  email: string;
+  avatar: string;
+  joinDate: string;
+  bio?: string;
+  stats: {
+    watchedMovies: number;
+    watchlistMovies: number;
+    favoriteGenres: string[];
+    totalWatchTime: number;
+  };
+  recentMovies: Movie[];
+}

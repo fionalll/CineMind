@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useWatched } from '../context/WatchedContext';
+import { useWatchlist } from '../context/WatchlistContext';
 import type { Movie } from '../types';
 
 interface WatchButtonProps {
@@ -14,6 +15,7 @@ const WatchButton: React.FC<WatchButtonProps> = ({
   className = '' 
 }) => {
   const { isMovieWatched, addToWatched, removeFromWatched } = useWatched();
+  const { isInWatchlist, removeFromWatchlist } = useWatchlist();
   const [loading, setLoading] = useState(false);
   const isWatched = isMovieWatched(movie.id);
 
@@ -39,6 +41,18 @@ const WatchButton: React.FC<WatchButtonProps> = ({
         console.log('➕ Adding to watched list...');
         await addToWatched(movie);
         console.log('✅ Successfully added to watched list');
+        
+        // Film izlendi olarak işaretlenince, izleme listesinden çıkar
+        if (isInWatchlist(movie.id)) {
+          console.log('🗑️ Removing from watchlist because movie is now watched...');
+          try {
+            await removeFromWatchlist(movie.id);
+            console.log('✅ Successfully removed from watchlist');
+          } catch (watchlistError) {
+            console.warn('⚠️ Could not remove from watchlist:', watchlistError);
+            // Bu hata critical değil, sadece log'la
+          }
+        }
       }
     } catch (error) {
       console.error('❌ Error toggling watched status:', error);

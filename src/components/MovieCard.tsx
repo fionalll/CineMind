@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
 import type { Movie } from '../types';
 import WatchButton from './WatchButton';
+import WatchlistButton from './WatchlistButton';
+import { useWatched } from '../context/WatchedContext';
 
 interface MovieCardProps {
   movie: Movie;
 }
 
 const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
+  const { isMovieWatched } = useWatched();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  
+  const isWatched = isMovieWatched(movie.id);
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'Tarih bilinmiyor';
@@ -70,6 +75,13 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
         <div className="absolute top-2 left-2 z-30">
           <WatchButton movie={movie} size="sm" />
         </div>
+
+        {/* Watchlist Button - Sadece izlenmemiş filmlerde göster */}
+        {!isWatched && (
+          <div className="absolute bottom-2 left-2 z-30">
+            <WatchlistButton movie={movie} size="sm" />
+          </div>
+        )}
 
         {/* Hover Overlay - Orta seviye z-index ile */}
         <div 

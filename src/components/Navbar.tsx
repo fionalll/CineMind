@@ -237,6 +237,13 @@ const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
                   >
                     Hesabım
                   </Link>
+                  <Link
+                    to={`/profile/${currentUser?.displayName || currentUser?.email?.split('@')[0]}`}
+                    className="block px-4 py-2 text-sm transition-colors duration-200 text-secondary hover:text-primary hover:bg-tertiary"
+                    onClick={() => setShowUserMenu(false)}
+                  >
+                    Profilim
+                  </Link>
                   <button
                     onClick={handleLogout}
                     className="w-full text-left px-4 py-2 text-sm transition-colors duration-200 text-secondary hover:text-primary hover:bg-tertiary"

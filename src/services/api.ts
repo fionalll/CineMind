@@ -180,4 +180,31 @@ export const movieService = {
       throw new Error('Yayında olan TV dizileri alınamadı');
     }
   },
+
+  // =================== WATCHLIST API FUNCTIONS ===================
+  
+  async getUserWatchlist(userId: string): Promise<any[]> {
+    try {
+      const response = await api.get(`/user/${userId}/watchlist`);
+      return response.data.watchlist;
+    } catch (error) {
+      throw new Error('İzleme listesi alınamadı');
+    }
+  },
+
+  async addToWatchlist(userId: string, movie: any): Promise<void> {
+    try {
+      await api.post(`/user/${userId}/watchlist`, movie);
+    } catch (error) {
+      throw new Error('Film izleme listesine eklenemedi');
+    }
+  },
+
+  async removeFromWatchlist(userId: string, movieId: number): Promise<void> {
+    try {
+      await api.delete(`/user/${userId}/watchlist/${movieId}`);
+    } catch (error) {
+      throw new Error('Film izleme listesinden çıkarılamadı');
+    }
+  }
 };

@@ -86,31 +86,61 @@ app.post('/api/get-recommendations', async (req, res) => {
     }
 
     // excludedTitles'ın güvenli kontrolü ve prompt oluşturma
-    const excludedMoviesText = (excludedTitles && Array.isArray(excludedTitles) && excludedTitles.length > 0) 
-      ? ` Lütfen şu filmleri önerme: [${excludedTitles.join(', ')}]` 
+    const excludedMoviesText = excludedTitles.length > 0 
+      ? `\n\nÖNEMLİ NOT: Lütfen aşağıdaki filmleri KESİNLİKLE önerme, çünkü bunlar daha önce önerildi: ${excludedTitles.join(', ')}.`
       : '';
 
-    // Create prompt for Gemini
-    const prompt = `Sen, dünya sineması konusunda uzman bir film küratörüsün. Kullanıcının verdiği isteğe göre tematik, yönetmen stili veya anlatı yapısı olarak benzer, ancak popüler, bariz olmayan veya yeni çıkan filmler önereceksin. Cevabını, içerisinde bir 'summaryText' ve 'recommendations' listesi olan tek bir JSON nesnesi olarak ver. 'recommendations' listesindeki her film bir nesne olmalı ve 'title' (filmin orijinal adı), 'year' (yapım yılı) ve 'reason' (bu filmi neden önerdiğine dair 1-2 cümlelik kısa bir açıklama) alanlarını içermelidir. Maksimum 5 film öner.
+    // Create enhanced CineMind prompt with intelligent mode detection
+    const prompt = `
+### KİMLİK ve ROL ###
+Sen, "CineMind" adında, dünyanın en bilgili ve sezgisel film uzmanı ve öneri sistemisin. İki ana yeteneğin var: spesifik bir filmi tahmin etmek ve film listeleri önermek.
 
-    Kullanıcı isteği: ${message}${excludedMoviesText}
-    
-    Cevabını sadece ve sadece aşağıdaki formatta bir JSON nesnesi olarak döndür:
+### ANA GÖREV ###
+Kullanıcının isteğini dikkatlice analiz et ve **niyetini anla.**
+1.  Eğer kullanıcı, ipuçları vererek spesifik bir filmi bulmaya çalışıyorsa ("hani bir film vardı...", "bir adam...", "sonunda şöyle oluyordu..."), **"Tek Tahmin Modu"**'na geç.
+2.  Eğer kullanıcı, bir tür, tema, yönetmen veya benzerlik belirterek genel bir film tavsiyesi istiyorsa ("bana ... gibi filmler öner", "bu akşam ne izlesem?"), **"Liste Önerme Modu"**'na geç.
+
+---
+### MOD 1: Tek Tahmin Modu ###
+*   **Amaç:** Kullanıcının aklındaki **TEK BİR SPESİFİK FİLMİ** doğru bir şekilde tahmin etmek.
+*   **Çıktı Formatı:** Cevabını, SADECE 'recommendations' listesinde TEK BİR film olan bir JSON nesnesi olarak ver. 'summaryText' alanında ise bu filmi neden tahmin ettiğini açıkla.
+**Geniş Bilgi Ağı Kullan:** Sadece konuya değil; karakterlere, sahnelere, nesnelere, sembollere, ikonik repliklere, oyunculara ve yönetmenlere odaklan.
+    **Örnek Çıktı (Tek Tahmin):**
     {
-      "summaryText": "Kullanıcının isteğine göre oluşturduğun kısa bir giriş cümlesi.",
+      "summaryText": "Verdiğiniz 'voleybol topuyla konuşan adam' ipucu, doğrudan Tom Hanks'in başrolde olduğu bu ikonik hayatta kalma filmini işaret ediyor.",
       "recommendations": [
         {
-          "title": "Film Adı 1",
-          "year": YYYY,
-          "reason": "Bu filmi önerme sebebin..."
-        },
-        {
-          "title": "Film Adı 2",
-          "year": YYYY,
-          "reason": "Bu filmi önerme sebebin..."
+          "title": "Cast Away",
+          "year": 2000,
+          "reason": "Issız bir adada hayatta kalma mücadelesi veren Chuck Noland'ın, Wilson adını verdiği voleybol topuyla kurduğu dostluk, sinema tarihinin en unutulmaz anlarındandır."
         }
       ]
-    }`;
+    }
+
+---
+### MOD 2: Liste Önerme Modu ###
+*   **Amaç:** Kullanıcının isteğine uygun, popüler olmayan ama kaliteli, en az 5 adet film önermek.
+*   **Çıktı Formatı:** Cevabını, içerisinde bir 'summaryText' ve 'recommendations' listesinde en az 5 film olan bir JSON nesnesi olarak ver.
+**Geniş Bilgi Ağı Kullan:** Sadece konuya değil; karakterlere, sahnelere, nesnelere, sembollere, ikonik repliklere, oyunculara ve yönetmenlere odaklan.
+    **Örnek Çıktı (Liste Önerme):**
+    {
+      "summaryText": "Inception gibi zihin büken ve gerçeklikle oynayan filmler arıyorsanız, işte size özel seçtiğim, daha az bilinen bazı inciler:",
+      "recommendations": [
+        { "title": "Coherence", "year": 2013, "reason": "..." },
+        { "title": "Primer", "year": 2004, "reason": "..." },
+        { "title": "Synecdoche, New York", "year": 2008, "reason": "..." },
+        { "title": "The Fountain", "year": 2006, "reason": "..." },
+        { "title": "Mr. Nobody", "year": 2009, "reason": "..." }
+      ]
+    }
+---
+
+### KULLANICI İSTEĞİ ###
+"${message}"${excludedMoviesText}
+
+### NİHAİ TALİMAT ###
+Yukarıdaki kullanıcı isteğini analiz et, hangi modda cevap vermen gerektiğine karar ver ve çıktını **SADECE VE SADECE** o mod için belirtilen JSON formatında, başka hiçbir ek metin olmadan döndür.
+`;
 
     // Debug log - istek bilgilerini logla
     console.log('🎬 Film önerisi isteği alındı:');
@@ -719,6 +749,69 @@ app.get('/api/tv/genres', async (req, res) => {
   }
 });
 
+// =================== WATCHLIST ENDPOINTS ===================
+
+// Get user's watchlist
+app.get('/api/user/:userId/watchlist', (req, res) => {
+  const { userId } = req.params;
+  console.log(`📋 Getting watchlist for user: ${userId}`);
+  
+  // For now, return empty array - implement with your database
+  res.json({ watchlist: [] });
+});
+
+// Add movie to watchlist
+app.post('/api/user/:userId/watchlist', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const movie = req.body;
+    
+    console.log(`➕ Adding movie to watchlist:`, {
+      userId,
+      movieId: movie.id,
+      movieTitle: movie.title
+    });
+    
+    // For now, just return success - implement with your database
+    res.json({ 
+      success: true, 
+      message: 'Movie added to watchlist',
+      movie: movie
+    });
+  } catch (error) {
+    console.error('❌ Error adding movie to watchlist:', error);
+    res.status(500).json({ 
+      error: 'Failed to add movie to watchlist',
+      details: error.message
+    });
+  }
+});
+
+// Remove movie from watchlist
+app.delete('/api/user/:userId/watchlist/:movieId', async (req, res) => {
+  try {
+    const { userId, movieId } = req.params;
+    
+    console.log(`❌ Removing movie from watchlist:`, {
+      userId,
+      movieId
+    });
+    
+    // For now, just return success - implement with your database
+    res.json({ 
+      success: true, 
+      message: 'Movie removed from watchlist',
+      movieId: movieId
+    });
+  } catch (error) {
+    console.error('❌ Error removing movie from watchlist:', error);
+    res.status(500).json({ 
+      error: 'Failed to remove movie from watchlist',
+      details: error.message
+    });
+  }
+});
+
 // =================== SEARCH ENDPOINTS ===================
 
 // Search movies
@@ -926,6 +1019,40 @@ app.get('/api/person/:personId', async (req, res) => {
       personId: req.params.personId
     });
     res.status(500).json({ status: 'Failed to fetch person credits', error: error.message });
+  }
+});
+
+// Kullanıcı profil endpoint'i
+app.get('/api/profile/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+    
+    // Simulated user data - gerçek uygulamada Firebase'den gelecek
+    const userProfile = {
+      id: 'user123',
+      username: username,
+      displayName: username.charAt(0).toUpperCase() + username.slice(1),
+      email: `${username}@example.com`,
+      avatar: `https://ui-avatars.com/api/?name=${username}&background=6366f1&color=fff&size=100`,
+      joinDate: '2024-01-15',
+      bio: 'Film tutkunu ve sinema eleştirmeni',
+      stats: {
+        watchedMovies: Math.floor(Math.random() * 200) + 50,
+        watchlistMovies: Math.floor(Math.random() * 50) + 10,
+        favoriteGenres: ['Aksiyon', 'Bilim Kurgu', 'Dram'],
+        totalWatchTime: Math.floor(Math.random() * 500) + 100
+      },
+      recentMovies: []
+    };
+
+    res.json(userProfile);
+  } catch (error) {
+    console.error('❌ Profile fetch error:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: 'Profil bilgileri alınamadı',
+      error: error.message 
+    });
   }
 });
 
