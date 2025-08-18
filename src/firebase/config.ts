@@ -6,14 +6,14 @@ import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyBHa_ClMEr3SVU58JkrUwbWzEsvpHmEgH4",
-  authDomain: "film-ana.firebaseapp.com",
-  projectId: "film-ana",
-  storageBucket: "film-ana.firebasestorage.app",
-  messagingSenderId: "196980311830",
-  appId: "1:196980311830:web:ec07c0355b1d3111167237",
-  measurementId: "G-2WNDLLVYDE"
+const firebaseConfig = {   // Add yours firebase 
+  apiKey: "   ",
+  authDomain: "  ",
+  projectId: "   ",
+  storageBucket: "    ",
+  messagingSenderId: "   ",
+  appId: "   ",
+  measurementId: "  "
 };
 
 // Initialize Firebase app first
