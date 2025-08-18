@@ -8,13 +8,12 @@ interface NavbarProps {
 }
 
 const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, avatar, username } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const location = useLocation();
   const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
-  const { avatar } = useAuth();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -152,6 +151,19 @@ const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
                 AI Asistan
               </Link>
               <Link
+                to="/random-episode"
+                className={`navbar-link ${isActive('/random-episode') ? 'active' : ''}`}
+                style={{
+                  color: isActive('/random-episode') ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  backgroundColor: isActive('/random-episode') ? 'var(--accent)' : 'transparent',
+                  borderRadius: '0.5rem',
+                  padding: '0.5rem 1rem',
+                  transition: 'all 0.2s',
+                }}
+              >
+                 Rastgele Bölüm
+              </Link>
+              <Link
                 to="/watched"
                 className={`navbar-link ${isActive('/watched') ? 'active' : ''}`}
                 style={{
@@ -238,7 +250,7 @@ const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
                     Hesabım
                   </Link>
                   <Link
-                    to={`/profile/${currentUser?.displayName || currentUser?.email?.split('@')[0]}`}
+                    to={`/profile/${username || currentUser?.displayName || currentUser?.email?.split('@')[0] || 'user'}`}
                     className="block px-4 py-2 text-sm transition-colors duration-200 text-secondary hover:text-primary hover:bg-tertiary"
                     onClick={() => setShowUserMenu(false)}
                   >

@@ -1,16 +1,20 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { COLOR_AVATARS, ANIMAL_AVATARS } from '../config/avatars';
 import { useWatched } from '../context/WatchedContext';
 import { useTheme } from '../context/ThemeContext';
 import Navbar from '../components/Navbar';
 import BackButton from '../components/BackButton';
+import SettingsModal from '../components/SettingsModal';
 
 const HesabimPage: React.FC = () => {
-  const { currentUser, avatar, updateAvatar, updateUsername, changeEmail, changePassword, deleteAccount } = useAuth();
+  const navigate = useNavigate();
+  const { currentUser, avatar, updateUsername, changeEmail, changePassword, deleteAccount } = useAuth();
   const { watchedMovies } = useWatched();
-  const { currentTheme, setTheme, themes } = useTheme();
+  const {} = useTheme();
   const [showAccountSettings, setShowAccountSettings] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showUsernameModal, setShowUsernameModal] = useState(false);
   const [newUsername, setNewUsername] = useState('');
   const [usernameLoading, setUsernameLoading] = useState(false);
@@ -198,24 +202,27 @@ const HesabimPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-primary">
-      <Navbar />
-      <div className="container mx-auto px-4 py-8">
-        <BackButton />
+    <div>
+      <div className="min-h-screen bg-primary">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8">
+          <BackButton />
         
         {/* Ana Panel - Tek Büyük Konteyner */}
-        <div className="card-bg rounded-xl p-17 grid grid-cols-2 md:grid-cols-6 gap-6 mt-6">
+        <div className="card-bg rounded-xl p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
           
-          {/* Sol Sütun: Profil Bilgileri */}
-          <div className="md:col-span-1">
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-bold text-primary mb-4">Profil Bilgileri</h2>
+          {/* Sol Sütun: Profil Bilgileri - Büyütüldü */}
+          <div className="lg:col-span-2">
+            <div className="text-center lg:text-left mb-6">
+              <h2 className="text-3xl font-bold text-primary mb-6">Profil Bilgileri</h2>
               
-              {/* Avatar gösterimi - Büyük */}
-              <div className="mb-4">
-                {avatar && avatar.startsWith('color_') ? (
-                  <div
-                    className="w-24 h-24 rounded-full border-4 border-accent flex items-center justify-center mx-auto"
+              <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6">
+                {/* Avatar gösterimi - Daha büyük */}
+                <div className="flex-shrink-0">
+                  <div className="mb-4 relative group cursor-pointer" onClick={() => setShowSettingsModal(true)}>
+                    {avatar && avatar.startsWith('color_') ? (
+                      <div
+                        className="w-32 h-32 rounded-full border-4 border-accent flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
                     style={{ backgroundColor: COLOR_AVATARS.find(a => a.id === avatar)?.value || '#ffffffff' }}
                   >
                     <span className="text-white text-2xl font-bold">
@@ -226,149 +233,112 @@ const HesabimPage: React.FC = () => {
                   <img
                     src={ANIMAL_AVATARS.find(a => a.id === avatar)?.src || '/avatars/bear.png'}
                     alt="Avatar"
-                    className="w-24 h-24 rounded-full border-4 border-accent mx-auto object-cover"
+                    className="w-24 h-24 rounded-full border-4 border-accent mx-auto object-cover transition-transform duration-200 group-hover:scale-105"
                   />
                 ) : (
-                  <div className="w-24 h-24 rounded-full border-4 border-accent flex items-center justify-center bg-secondary mx-auto">
+                  <div className="w-24 h-24 rounded-full border-4 border-accent flex items-center justify-center bg-secondary mx-auto transition-transform duration-200 group-hover:scale-105">
                     <span className="text-primary text-2xl font-bold">
                       {currentUser?.displayName?.[0]?.toUpperCase() || 'U'}
                     </span>
                   </div>
                 )}
+                
+                {/* Hover Overlay */}
+                <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <div className="text-white text-center">
+                    <div className="text-2xl mb-1">✏️</div>
+                    <div className="text-xs font-medium">Düzenle</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* CLOSE ADDED */}
               </div>
 
-              {/* Kullanıcı Bilgileri */}
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-primary">
-                  {currentUser?.displayName || 'Kullanıcı'}
-                </h3>
-                <p className="text-secondary text-sm">
-                  {currentUser?.email}
-                </p>
-                <div className="mt-4 p-3 bg-secondary rounded-lg">
-                  <p className="text-sm text-secondary">
-                    <span className="text-accent font-semibold">{watchedMovies.length}</span> film izlendi
-                  </p>
+              {/* Kullanıcı Bilgileri - Tamamen yeniden tasarlandı */}
+              <div className="flex-1">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-2xl font-bold text-primary mb-2">
+                      {currentUser?.displayName || 'Kullanıcı'}
+                    </h3>
+                    <p className="text-lg text-secondary mb-4">{currentUser?.email}</p>
+                  </div>
+
+                  <div className="bg-secondary rounded-lg p-3 w-64">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">📊</span>
+                      <div>
+                        <h4 className="font-semibold text-primary text-sm">Hesap Durumu</h4>
+                        <p className="text-xs text-secondary">Aktif üyelik</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Ayarlar Butonları - Kompakt */}
+                  <div className="space-y-3 mt-6 max-w-sm">
+                    {/* Görünümü Kişiselleştir Butonu - Küçük */}
+                    <button
+                      onClick={() => setShowSettingsModal(true)}
+                      className="w-64 bg-secondary hover:bg-accent hover:bg-opacity-20 border border-default hover:border-accent p-3 rounded-lg transition-all duration-200 flex items-center gap-3 group"
+                    >
+                      <div className="text-xl group-hover:scale-110 transition-transform duration-200">🎨</div>
+                      <div className="text-left">
+                        <div className="text-sm font-semibold text-primary">Görünümü Kişiselleştir</div>
+                        <div className="text-xs text-secondary">Tema ve avatar ayarları</div>
+                      </div>
+                    </button>
+
+                    {/* Hesap Ayarları Butonu - Küçük */}
+                    <button
+                      onClick={() => setShowAccountSettings(true)}
+                      className="w-64 bg-secondary hover:bg-accent hover:bg-opacity-20 border border-default hover:border-accent p-3 rounded-lg transition-all duration-200 flex items-center gap-3 group"
+                    >
+                      <div className="text-xl group-hover:scale-110 transition-transform duration-200">⚙️</div>
+                      <div className="text-left">
+                        <div className="text-sm font-semibold text-primary">Hesap Ayarları</div>
+                        <div className="text-xs text-secondary">Kullanıcı bilgileri ve güvenlik</div>
+                      </div>
+                    </button>
+
+                    {/* İzlenen Filmler Butonu - En altta */}
+                    <button
+                      onClick={() => navigate('/watched-movies')}
+                      className="w-64 bg-secondary hover:bg-accent hover:bg-opacity-20 border border-default hover:border-accent p-3 rounded-lg transition-all duration-200 flex items-center gap-2 group"
+                    >
+                      <div className="text-xl group-hover:scale-110 transition-transform duration-200">🎬</div>
+                      <div className="text-left flex-1">
+                        <div className="text-sm font-semibold text-primary">İzlenen Filmler</div>
+                        <div className="text-xs text-secondary">Film geçmişinizi görüntüleyin</div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-bold text-accent">{watchedMovies.length}</span>
+                      </div>
+                    </button>
+                  </div>
                 </div>
-                
-                {/* Hesap Ayarları Butonu */}
-                <button 
-                  onClick={() => setShowAccountSettings(!showAccountSettings)}
-                  className="mt-4 w-full p-3 bg-accent bg-opacity-20 border border-accent border-opacity-30 rounded-lg text-primary font-medium hover:bg-opacity-30 transition-all duration-200"
-                >
-                  ⚙️ Hesap Ayarları
-                </button>
               </div>
             </div>
           </div>
+        </div>
+        </div>
+      </div>
 
-          {/* Sağ Sütun: Tercihler veya Hesap Ayarları */}
-          <div className="md:col-span-2 flex flex-col gap-6">
-            
-            {!showAccountSettings ? (
-              <>
-                {/* Üst Panel: Tema Seçimi */}
-                <div>
-                  <h2 className="text-xl font-bold text-primary mb-4">🎨 Tema Seçimi</h2>
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                    {themes.map((theme) => (
-                      <button
-                        key={theme.id}
-                        onClick={() => setTheme(theme.id)}
-                        className={`p-3 rounded-lg border-2 transition-all duration-200 ${
-                          currentTheme === theme.id
-                            ? 'border-accent bg-accent bg-opacity-20'
-                            : 'border-accent border-opacity-30 hover:border-accent hover:border-opacity-60'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="flex gap-1">
-                            <div
-                              className="w-4 h-4 rounded-full border"
-                              style={{ backgroundColor: theme.preview.primary }}
-                            />
-                            <div
-                              className="w-4 h-4 rounded-full border"
-                              style={{ backgroundColor: theme.preview.secondary }}
-                            />
-                            <div
-                              className="w-4 h-4 rounded-full border"
-                              style={{ backgroundColor: theme.preview.accent }}
-                            />
-                          </div>
-                        </div>
-                        <p className="text-sm font-medium text-primary text-left">{theme.name}</p>
-                        <p className="text-xs text-secondary text-left">{theme.description}</p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Alt Panel: Avatar Seçimi */}
-                <div>
-                  <h2 className="text-xl font-bold text-primary mb-4">🎭 Avatar Seçimi</h2>
-                  
-                  {/* Renk Avatarları */}
-                  <div className="mb-6">
-                    <h3 className="text-md font-semibold text-primary mb-3">Renk Avatarları</h3>
-                    <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-3">
-                      {COLOR_AVATARS.map((colorAvatar) => (
-                        <button
-                          key={colorAvatar.id}
-                          onClick={() => updateAvatar(colorAvatar.id)}
-                          className={`w-12 h-12 rounded-full border-4 flex items-center justify-center transition-all duration-200 ${
-                            avatar === colorAvatar.id
-                              ? 'border-accent scale-110'
-                              : 'border-accent border-opacity-30 hover:border-accent hover:border-opacity-60'
-                          }`}
-                          style={{ backgroundColor: colorAvatar.value }}
-                        >
-                          <span className="text-white text-sm font-bold">
-                            {currentUser?.displayName?.[0]?.toUpperCase() || 'U'}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Hayvan Avatarları */}
-                  <div>
-                    <h3 className="text-md font-semibold text-primary mb-3">Hayvan Avatarları</h3>
-                    <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-3">
-                      {ANIMAL_AVATARS.map((animalAvatar) => (
-                        <button
-                          key={animalAvatar.id}
-                          onClick={() => updateAvatar(animalAvatar.id)}
-                          className={`w-12 h-12 rounded-full border-4 transition-all duration-200 overflow-hidden ${
-                            avatar === animalAvatar.id
-                              ? 'border-accent scale-110'
-                              : 'border-accent border-opacity-30 hover:border-accent hover:border-opacity-60'
-                          }`}
-                        >
-                          <img
-                            src={animalAvatar.src}
-                            alt={animalAvatar.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </>
-            ) : (
-              /* Hesap Ayarları Paneli */
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-primary">⚙️ Hesap Ayarları</h2>
-                  <button 
-                    onClick={() => setShowAccountSettings(false)}
-                    className="text-secondary hover:text-accent transition-colors"
-                  >
-                    ✕ Kapat
-                  </button>
-                </div>
-                
+      {/* Hesap Ayarları Modalı */}
+        {showAccountSettings && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-primary rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto custom-scrollbar">
+              <div className="sticky top-0 bg-primary border-b border-default p-6 flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-primary">⚙️ Hesap Ayarları</h2>
+                <button
+                  onClick={() => setShowAccountSettings(false)}
+                  className="text-secondary hover:text-primary transition-colors p-2 rounded-lg hover:bg-secondary"
+                >
+                  ✕
+                </button>
+              </div>
+              {/* Hesap Ayarları Paneli */}
+              <div className="p-6">
                 <div className="space-y-4">
                   {/* Kullanıcı Adını Değiştir */}
                   <button 
@@ -420,7 +390,7 @@ const HesabimPage: React.FC = () => {
                       </svg>
                     </div>
                     <span className="text-purple-400 font-medium">Oturum Geçmişi</span>
-                  </button> 
+                  </button>
 
                   {/* Hesabı Sil */}
                   <button 
@@ -436,12 +406,11 @@ const HesabimPage: React.FC = () => {
                   </button>
                 </div>
               </div>
-            )}
+            </div>
           </div>
-        </div>
-      </div>
+        )}
 
-      {/* Kullanıcı Adı Değiştirme Modalı */}
+        {/* Kullanıcı Adı Değiştirme Modalı */}
       {showUsernameModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-secondary rounded-lg p-6 w-full max-w-md mx-4">
@@ -748,6 +717,12 @@ const HesabimPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Settings Modal Componenti */}
+      <SettingsModal 
+        isOpen={showSettingsModal} 
+        onClose={() => setShowSettingsModal(false)} 
+      />
     </div>
   );
 };

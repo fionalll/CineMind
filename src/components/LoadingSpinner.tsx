@@ -2,11 +2,15 @@ import React from 'react';
 
 const LoadingSpinner: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center">
-      <div className="text-center">
-        <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <h2 className="text-xl font-bold text-white mb-2">🎬 CineMind AI</h2>
-        <p className="text-gray-300">Yükleniyor...</p>
+    <div className="page-container pt-16">
+      <div className="page-content">
+        <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="w-12 h-12 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <h2 className="text-lg font-semibold text-primary mb-2">🎬 CineMind</h2>
+            <p className="text-secondary">Yükleniyor...</p>
+          </div>
+        </div>
       </div>
     </div>
   );

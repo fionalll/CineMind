@@ -3,6 +3,7 @@ import Sidebar from '../components/Sidebar';
 import HeroSection from '../components/HeroSection';
 import MovieCarousel from '../components/MovieCarousel';
 import MovieListByGenre from '../components/MovieListByGenre';
+import MovieOfTheDayCard from '../components/MovieOfTheDayCard';
 import Navbar from '../components/Navbar';
 import { movieService } from '../services/api';
 import type { Genre } from '../types';
@@ -10,6 +11,8 @@ import type { Genre } from '../types';
 const HomePage = () => {
   const [selectedGenre, setSelectedGenre] = useState<Genre>({ id: 0, name: 'Ana Sayfa' });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [movieOfTheDay, setMovieOfTheDay] = useState<any>(null);
+  const [movieOfTheDayLoading, setMovieOfTheDayLoading] = useState(true);
 
   const handleGenreSelect = (genre: Genre) => {
     setSelectedGenre(genre);
@@ -20,6 +23,23 @@ const HomePage = () => {
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
+
+  // Günün filmini fetch et
+  useEffect(() => {
+    const fetchMovieOfTheDay = async () => {
+      try {
+        setMovieOfTheDayLoading(true);
+        const response = await movieService.getMovieOfTheDay();
+        setMovieOfTheDay(response.movieOfTheDay);
+      } catch (error) {
+        console.error('Günün filmi alınamadı:', error);
+      } finally {
+        setMovieOfTheDayLoading(false);
+      }
+    };
+
+    fetchMovieOfTheDay();
+  }, []);
 
   // Close sidebar when clicking outside (mobile)
   useEffect(() => {
@@ -57,6 +77,9 @@ const HomePage = () => {
       // Ana sayfa içeriği
       return (
         <div className="space-y-8">
+          {/* Günün Filmi */}
+          <MovieOfTheDayCard movie={movieOfTheDay} loading={movieOfTheDayLoading} />
+          
           <HeroSection />
           
           <MovieCarousel

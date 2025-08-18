@@ -10,9 +10,10 @@ import DizilerPage from './pages/DizilerPage';
 import ChatbotPage from './pages/ChatbotPage';
 import WatchedMoviesPage from './pages/WatchedMoviesPage';
 import HesabimPage from './pages/HesabimPage';
-import UserProfilePage from './pages/Profile';
+import UserProfilePage from './pages/UserProfilePage';
 import SearchResultsPage from './pages/SearchResultsPage';
 import PersonCreditsPage from './pages/PersonCreditsPage';
+import RandomEpisodePage from './pages/RandomEpisodePage';
 import LoginRegister from './components/LoginRegister';
 import TestPage from './pages/TestPage';
 
@@ -37,6 +38,7 @@ const AppContent = () => {
                 <Route path="/watched" element={<WatchedMoviesPage />} />
                 <Route path="/hesabim" element={<HesabimPage />} />
                 <Route path="/profile/:username" element={<UserProfilePage />} />
+                <Route path="/random-episode" element={<RandomEpisodePage />} />
                 <Route path="/test" element={<TestPage />} />
                 <Route path="/search" element={<SearchResultsPage />} />
                 <Route path="/person/:personId" element={<PersonCreditsPage />} />

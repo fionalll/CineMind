@@ -4,7 +4,6 @@ import { auth } from '../firebase/config';
 import type { User } from 'firebase/auth';
 import { 
   signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
   updateProfile,
@@ -12,9 +11,11 @@ import {
   reauthenticateWithCredential,
   verifyBeforeUpdateEmail,
   updatePassword,
-  deleteUser
+  deleteUser,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import LoadingSpinner from '../components/LoadingSpinner';
+
 
 interface AuthContextType {
   currentUser: User | null;
@@ -23,11 +24,13 @@ interface AuthContextType {
   logout: () => Promise<void>;
   loading: boolean;
   avatar: string | null;
+  username: string | null;
   updateAvatar: (avatar: string) => Promise<void>;
   updateUsername: (newUsername: string) => Promise<void>;
   changeEmail: (currentPassword: string, newEmail: string) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   deleteAccount: (currentPassword: string) => Promise<void>;
+   sendResetPasswordLink: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -48,6 +51,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true); // Başlangıçta her zaman true
   const [avatar, setAvatar] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
   const db = getFirestore();
 
   // --- TÜM MANTIK TEK BİR useEffect İÇİNDE ---
@@ -63,19 +67,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const userDocRef = doc(db, 'users', user.uid);
           const userDoc = await getDoc(userDocRef);
           if (userDoc.exists()) {
-            setAvatar(userDoc.data().avatar || null);
+            const userData = userDoc.data();
+            setAvatar(userData.avatar || null);
+            setUsername(userData.username || null);
           } else {
             // Firestore'da henüz kullanıcının dokümanı yoksa (yeni kayıt olmuş olabilir)
-            // avatarı null olarak ayarla.
+            // avatarı ve username'i null olarak ayarla.
             setAvatar(null);
+            setUsername(null);
           }
         } catch (error) {
-          console.error("Kullanıcı verisi çekilirken hata:", error);
-          setAvatar(null);
         }
       } else {
-        // Eğer kullanıcı ÇIKIŞ YAPMIŞSA, avatarı temizle.
+        // Eğer kullanıcı ÇIKIŞ YAPMIŞSA, avatarı ve username'i temizle.
         setAvatar(null);
+        setUsername(null);
       }
 
       // Tüm işlemler bittiğinde (giriş yapmış veya yapmamış) yüklenmeyi bitir.
@@ -86,14 +92,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => unsubscribe();
   }, [db]); // db referansı değişmeyeceği için bu useEffect sadece bir kere çalışır.
 
-  const register = async (email: string, password:string, username: string) => {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(userCredential.user, { displayName: username });
-    // Yeni kullanıcı için Firestore'da boş bir doküman oluşturabiliriz (isteğe bağlı ama iyi bir pratik)
-    await setDoc(doc(db, 'users', userCredential.user.uid), {
-      username: username,
-      createdAt: new Date(),
-    });
+  const register = async (email: string, password: string, username: string) => {
+    try {
+      // Backend'e kayıt isteği gönder (Firebase Auth + Firestore işlemleri backend'te yapılıyor)
+      const response = await fetch('http://localhost:5002/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          username,
+          displayName: username
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Kayıt işlemi başarısız');
+      }
+
+      // Başarılı kayıt sonrası Firebase'e giriş yap
+      await signInWithEmailAndPassword(auth, email, password);
+
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      throw error;
+    }
   };
 
   const login = async (email: string, password: string) => {
@@ -223,6 +250,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const sendResetPasswordLink = async (email: string) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      console.log('✅ Şifre sıfırlama linki gönderildi:', email);
+    } catch (error) {
+      console.error("Şifre sıfırlama linki gönderilirken hata:", error);
+      if (error instanceof Error) {
+        if (error.message.includes('auth/invalid-email')) {
+          throw new Error('Geçersiz e-posta adresi');
+        } else if (error.message.includes('auth/user-not-found')) {
+          throw new Error('Bu e-posta adresine kayıtlı kullanıcı bulunamadı');
+        }
+      }
+      throw error;
+    }
+  };
+
   const value = {
     currentUser,
     login,
@@ -230,11 +274,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     loading,
     avatar,
+    username,
     updateAvatar,
     updateUsername,
     changeEmail,
     changePassword,
-    deleteAccount
+    deleteAccount,
+    sendResetPasswordLink
   };
 
   return (

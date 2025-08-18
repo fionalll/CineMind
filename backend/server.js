@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import axios from 'axios';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import admin from 'firebase-admin';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -12,12 +13,40 @@ const __dirname = path.dirname(__filename);
 // Load .env file from backend directory
 dotenv.config({ path: path.join(__dirname, '.env') });
 
+// Initialize Firebase Admin SDK
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.applicationDefault(),
+    // Firebase project ID'si gerekirse buraya eklenebilir
+  });
+}
+
+const db = admin.firestore();
+
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Auth middleware - Token doğrulama
+const decodeToken = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1]; // Bearer token
+    if (!token) {
+      return res.status(401).json({ error: 'Token bulunamadı' });
+    }
+
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    req.user = decodedToken;
+    req.currentUserId = decodedToken.uid;
+    next();
+  } catch (error) {
+    console.error('Token doğrulama hatası:', error);
+    return res.status(401).json({ error: 'Geçersiz token' });
+  }
+};
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -1056,11 +1085,614 @@ app.get('/api/profile/:username', async (req, res) => {
   }
 });
 
+// Kullanıcı takip bilgilerini getiren endpoint
+app.get('/api/users/:userId/follow-stats', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Firestore'dan kullanıcı dokümanını al
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+    
+    if (!userDoc.exists) {
+      // Kullanıcı yoksa boş takip bilgileri döndür
+      return res.json({
+        followersCount: 0,
+        followingCount: 0,
+        followers: [],
+        following: []
+      });
+    }
+    
+    const userData = userDoc.data();
+    const followers = userData?.followers || [];
+    const following = userData?.following || [];
+    
+    res.json({
+      followersCount: followers.length,
+      followingCount: following.length,
+      followers,
+      following
+    });
+    
+  } catch (error) {
+    console.error('❌ Follow stats fetch error:', error);
+    res.status(500).json({ 
+      error: 'Takip bilgileri alınamadı',
+      details: error.message 
+    });
+  }
+});
+
+// Giriş yapmış kullanıcının bir profili takip edip etmediğini kontrol eden endpoint
+app.get('/api/users/:profileUserId/follow-status', decodeToken, async (req, res) => {
+  try {
+    const { profileUserId } = req.params;
+    const currentUserId = req.currentUserId;
+    
+    // Kendi profili için false döndür
+    if (currentUserId === profileUserId) {
+      return res.json({ isFollowing: false });
+    }
+    
+    // Mevcut kullanıcının following listesini kontrol et
+    const currentUserRef = db.collection('users').doc(currentUserId);
+    const currentUserDoc = await currentUserRef.get();
+    
+    if (!currentUserDoc.exists) {
+      return res.json({ isFollowing: false });
+    }
+    
+    const currentUserData = currentUserDoc.data();
+    const following = currentUserData?.following || [];
+    const isFollowing = following.includes(profileUserId);
+    
+    res.json({ isFollowing });
+    
+  } catch (error) {
+    console.error('❌ Follow status check error:', error);
+    res.status(500).json({ 
+      error: 'Takip durumu kontrol edilemedi',
+      details: error.message 
+    });
+  }
+});
+
+// Takip sistemi endpoint'i - Kullanıcı takip etme/çıkarma
+app.post('/api/users/:profileUserId/follow', decodeToken, async (req, res) => {
+  try {
+    const { profileUserId } = req.params;
+    const currentUserId = req.currentUserId;
+
+    // Kendisini takip edemez
+    if (currentUserId === profileUserId) {
+      return res.status(400).json({ 
+        error: 'Kendinizi takip edemezsiniz' 
+      });
+    }
+
+    // Firestore references
+    const currentUserRef = db.collection('users').doc(currentUserId);
+    const profileUserRef = db.collection('users').doc(profileUserId);
+
+    // Transaction ile her iki dokümanı da güvenli şekilde güncelle
+    const result = await db.runTransaction(async (transaction) => {
+      // Mevcut kullanıcının dokümanını al
+      const currentUserDoc = await transaction.get(currentUserRef);
+      const profileUserDoc = await transaction.get(profileUserRef);
+
+      // Kullanıcılar mevcut değilse oluştur
+      if (!currentUserDoc.exists) {
+        transaction.set(currentUserRef, {
+          following: [],
+          followers: [],
+          createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+      }
+
+      if (!profileUserDoc.exists) {
+        transaction.set(profileUserRef, {
+          following: [],
+          followers: [],
+          createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+      }
+
+      // Mevcut takip durumunu kontrol et
+      const currentUserData = currentUserDoc.data() || { following: [] };
+      const profileUserData = profileUserDoc.data() || { followers: [] };
+
+      const currentFollowing = currentUserData.following || [];
+      const profileFollowers = profileUserData.followers || [];
+
+      const isCurrentlyFollowing = currentFollowing.includes(profileUserId);
+      
+      if (isCurrentlyFollowing) {
+        // Takipten çıkar
+        transaction.update(currentUserRef, {
+          following: admin.firestore.FieldValue.arrayRemove(profileUserId)
+        });
+        transaction.update(profileUserRef, {
+          followers: admin.firestore.FieldValue.arrayRemove(currentUserId)
+        });
+        return { action: 'unfollowed', isFollowing: false };
+      } else {
+        // Takip et
+        transaction.update(currentUserRef, {
+          following: admin.firestore.FieldValue.arrayUnion(profileUserId)
+        });
+        transaction.update(profileUserRef, {
+          followers: admin.firestore.FieldValue.arrayUnion(currentUserId)
+        });
+        return { action: 'followed', isFollowing: true };
+      }
+    });
+
+    console.log(`✅ Follow operation successful: ${currentUserId} ${result.action} ${profileUserId}`);
+    
+    res.json({
+      success: true,
+      action: result.action,
+      isFollowing: result.isFollowing,
+      message: result.action === 'followed' ? 'Kullanıcı takip edildi' : 'Kullanıcı takipten çıkarıldı'
+    });
+
+  } catch (error) {
+    console.error('❌ Follow operation error:', error);
+    res.status(500).json({ 
+      error: 'Takip işlemi başarısız',
+      details: error.message 
+    });
+  }
+});
+
 // Environment variables kontrolü - server başlangıcında
 console.log('🔧 Environment Variables Check:');
 console.log('TMDB_API_KEY:', process.env.TMDB_API_KEY ? '✅ Mevcut' : '❌ Eksik');
 console.log('GEMINI_API_KEY:', process.env.GEMINI_API_KEY ? '✅ Mevcut' : '❌ Eksik');
 console.log('PORT:', process.env.PORT || 'Default 5000');
+
+// ==============================================
+// BENZERSIZ KULLANICI ADI SİSTEMİ - FAZ 1
+// ==============================================
+
+// 1. Kullanıcı adı müsaaitlik kontrolü
+app.post('/api/auth/check-username', async (req, res) => {
+  try {
+    const { username } = req.body;
+
+    if (!username || !username.trim()) {
+      return res.status(400).json({ 
+        error: 'Kullanıcı adı gereklidir',
+        available: false 
+      });
+    }
+
+    // Kullanıcı adını normalize et (küçük harf, trim)
+    const normalizedUsername = username.trim().toLowerCase();
+
+    // Minimum uzunluk kontrolü
+    if (normalizedUsername.length < 3) {
+      return res.status(400).json({ 
+        error: 'Kullanıcı adı en az 3 karakter olmalıdır',
+        available: false 
+      });
+    }
+
+    // Geçersiz karakterler kontrolü
+    const usernameRegex = /^[a-z0-9_]+$/;
+    if (!usernameRegex.test(normalizedUsername)) {
+      return res.status(400).json({ 
+        error: 'Kullanıcı adı sadece harf, rakam ve alt çizgi içerebilir',
+        available: false 
+      });
+    }
+
+    console.log(`🔍 Checking username availability: ${normalizedUsername}`);
+
+    // Firestore'da usernames koleksiyonunda kontrol et
+    const usernameDoc = await db.collection('usernames').doc(normalizedUsername).get();
+
+    if (usernameDoc.exists) {
+      console.log(`❌ Username not available: ${normalizedUsername}`);
+      return res.json({ 
+        available: false,
+        message: 'Bu kullanıcı adı zaten kullanılıyor'
+      });
+    }
+
+    console.log(`✅ Username available: ${normalizedUsername}`);
+    res.json({ 
+      available: true,
+      message: 'Kullanıcı adı müsait'
+    });
+
+  } catch (error) {
+    console.error('Username check error:', error);
+    res.status(500).json({ 
+      error: 'Kullanıcı adı kontrolü sırasında hata oluştu',
+      available: false 
+    });
+  }
+});
+
+// 2. Güçlendirilmiş kayıt endpoint'i
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { email, password, username, displayName } = req.body;
+
+    // Gerekli alanları kontrol et
+    if (!email || !password || !username) {
+      return res.status(400).json({ 
+        error: 'Email, şifre ve kullanıcı adı gereklidir' 
+      });
+    }
+
+    // Kullanıcı adını normalize et
+    const normalizedUsername = username.trim().toLowerCase();
+
+    // Kullanıcı adı formatını tekrar kontrol et
+    const usernameRegex = /^[a-z0-9_]+$/;
+    if (!usernameRegex.test(normalizedUsername) || normalizedUsername.length < 3) {
+      return res.status(400).json({ 
+        error: 'Geçersiz kullanıcı adı formatı' 
+      });
+    }
+
+    console.log(`🔄 Starting registration process for: ${email} (@${normalizedUsername})`);
+
+    // Firestore transaction ile atomik işlem
+    const result = await db.runTransaction(async (transaction) => {
+      // 1. Username hala müsait mi tekrar kontrol et
+      const usernameDocRef = db.collection('usernames').doc(normalizedUsername);
+      const usernameDoc = await transaction.get(usernameDocRef);
+
+      if (usernameDoc.exists) {
+        throw new Error('Bu kullanıcı adı zaten kullanılıyor');
+      }
+
+      // 2. Firebase Auth'da kullanıcı oluştur (transaction dışında yapılacak)
+      return { normalizedUsername };
+    });
+
+    // Firebase Authentication'da kullanıcı oluştur
+    const userRecord = await admin.auth().createUser({
+      email: email,
+      password: password,
+      displayName: displayName || normalizedUsername,
+    });
+
+    console.log(`✅ Firebase user created: ${userRecord.uid}`);
+
+    // 3. Kullanıcı oluşturulduktan sonra username ve profil bilgilerini kaydet
+    await db.runTransaction(async (transaction) => {
+      const usernameDocRef = db.collection('usernames').doc(result.normalizedUsername);
+      const userDocRef = db.collection('users').doc(userRecord.uid);
+
+      // Username rezervasyonu
+      transaction.set(usernameDocRef, {
+        userId: userRecord.uid,
+        email: email,
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      // Kullanıcı profil bilgileri
+      transaction.set(userDocRef, {
+        username: result.normalizedUsername,
+        email: email,
+        displayName: displayName || result.normalizedUsername,
+        following: [],
+        followers: [],
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    });
+
+    console.log(`🎉 Registration completed successfully for @${result.normalizedUsername}`);
+
+    res.status(201).json({
+      success: true,
+      message: 'Kullanıcı başarıyla oluşturuldu',
+      user: {
+        uid: userRecord.uid,
+        email: email,
+        username: result.normalizedUsername,
+        displayName: displayName || result.normalizedUsername
+      }
+    });
+
+  } catch (error) {
+    console.error('Registration error:', error);
+    
+    // Eğer Firebase user oluşturulmuşsa ama Firestore işlemi başarısız olduysa temizle
+    if (error.message.includes('kullanıcı adı')) {
+      res.status(400).json({ error: error.message });
+    } else {
+      res.status(500).json({ 
+        error: 'Kayıt işlemi sırasında hata oluştu',
+        details: error.message 
+      });
+    }
+  }
+});
+
+// ==============================================
+// END - BENZERSIZ KULLANICI ADI SİSTEMİ
+// ==============================================
+
+// ==============================================
+// USERNAME TABANLI PROFİL SİSTEMİ
+// ==============================================
+
+// Username ile kullanıcı profili getirme
+app.get('/api/profile/by-username/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+    
+    console.log(`🔍 Fetching profile for username: ${username}`);
+    
+    // Username'i normalize et
+    const normalizedUsername = username.trim().toLowerCase();
+    
+    // Önce usernames koleksiyonundan userId'yi bul
+    const usernameDoc = await db.collection('usernames').doc(normalizedUsername).get();
+    
+    if (!usernameDoc.exists) {
+      console.log(`❌ Username not found: ${normalizedUsername}`);
+      return res.status(404).json({ 
+        error: 'Kullanıcı bulunamadı',
+        message: `"${username}" kullanıcı adlı kullanıcı bulunamadı`
+      });
+    }
+    
+    const usernameData = usernameDoc.data();
+    const userId = usernameData.userId;
+    
+    // userId ile users koleksiyonundan profil bilgilerini al
+    const userDoc = await db.collection('users').doc(userId).get();
+    
+    if (!userDoc.exists) {
+      console.log(`❌ User document not found for userId: ${userId}`);
+      return res.status(404).json({ 
+        error: 'Kullanıcı profili bulunamadı' 
+      });
+    }
+    
+    const userData = userDoc.data();
+    
+    // Herkese açık profil bilgilerini oluştur
+    const profileData = {
+      id: userId,
+      username: normalizedUsername,
+      displayName: userData.displayName || normalizedUsername,
+      avatar: userData.avatar || null,
+      following: userData.following || [],
+      followers: userData.followers || [],
+      followersCount: (userData.followers || []).length,
+      followingCount: (userData.following || []).length,
+      createdAt: userData.createdAt,
+      updatedAt: userData.updatedAt
+    };
+    
+    console.log(`✅ Profile found for @${normalizedUsername}`);
+    res.json({
+      success: true,
+      profile: profileData
+    });
+
+  } catch (error) {
+    console.error('Get profile by username error:', error);
+    res.status(500).json({ 
+      error: 'Profil bilgileri alınırken hata oluştu',
+      details: error.message 
+    });
+  }
+});
+
+// ==============================================
+// END - USERNAME TABANLI PROFİL SİSTEMİ
+// ==============================================
+
+// ==============================================
+// GÜNÜN FİLMİ SİSTEMİ
+// ==============================================
+
+// Günün filmini getir
+app.get('/api/movie-of-the-day', async (req, res) => {
+  try {
+    console.log('🎬 Fetching movie of the day...');
+    
+    // Bugünün tarihi ile deterministik film seçimi
+    const today = new Date();
+    const dayOfMonth = today.getDate(); // 1-31 arası
+    const month = today.getMonth() + 1; // 1-12 arası
+    
+    // Popüler filmleri çek
+    const tmdbResponse = await axios.get(`https://api.themoviedb.org/3/movie/popular`, {
+      params: {
+        api_key: process.env.TMDB_API_KEY,
+        language: 'tr-TR',
+        page: 1
+      }
+    });
+
+    if (!tmdbResponse.data.results || tmdbResponse.data.results.length === 0) {
+      throw new Error('Popüler filmler listesi alınamadı');
+    }
+
+    // Günün sayısını kullanarak deterministik seçim yap
+    const movies = tmdbResponse.data.results;
+    const selectedIndex = (dayOfMonth + month) % movies.length;
+    const selectedMovie = movies[selectedIndex];
+
+    // Seçilen filmin detaylarını çek
+    const movieDetailsResponse = await axios.get(`https://api.themoviedb.org/3/movie/${selectedMovie.id}`, {
+      params: {
+        api_key: process.env.TMDB_API_KEY,
+        language: 'tr-TR',
+        append_to_response: 'credits,videos'
+      }
+    });
+
+    const movieDetails = movieDetailsResponse.data;
+
+    // Günün filmi verisi
+    const movieOfTheDay = {
+      id: movieDetails.id,
+      title: movieDetails.title,
+      overview: movieDetails.overview,
+      backdrop_path: movieDetails.backdrop_path,
+      poster_path: movieDetails.poster_path,
+      release_date: movieDetails.release_date,
+      vote_average: movieDetails.vote_average,
+      genres: movieDetails.genres,
+      runtime: movieDetails.runtime,
+      date: today.toISOString().split('T')[0] // YYYY-MM-DD formatında
+    };
+
+    console.log(`✅ Movie of the day selected: ${movieDetails.title}`);
+    
+    res.json({
+      success: true,
+      movieOfTheDay: movieOfTheDay
+    });
+
+  } catch (error) {
+    console.error('Movie of the day error:', error);
+    res.status(500).json({ 
+      error: 'Günün filmi alınırken hata oluştu',
+      details: error.message 
+    });
+  }
+});
+
+// ==============================================
+// END - GÜNÜN FİLMİ SİSTEMİ
+// ==============================================
+
+// ==============================================
+// RASTGELE BÖLÜM ÜRETİCİ SİSTEMİ
+// ==============================================
+
+app.post('/api/random-episode', async (req, res) => {
+  try {
+    const { seriesName } = req.body;
+    
+    if (!seriesName) {
+      return res.status(400).json({ error: 'Dizi adı gerekli' });
+    }
+
+    console.log(`🎯 Random episode search for: ${seriesName}`);
+
+    // 1. TMDB'de diziyi ara
+    const searchResponse = await axios.get(`${TMDB_BASE_URL}/search/tv`, {
+      params: {
+        api_key: TMDB_API_KEY,
+        query: seriesName,
+        language: 'tr-TR'
+      }
+    });
+
+    if (!searchResponse.data.results || searchResponse.data.results.length === 0) {
+      return res.status(404).json({ error: 'Dizi bulunamadı' });
+    }
+
+    const series = searchResponse.data.results[0]; // En iyi sonucu al
+    const tvId = series.id;
+
+    // 2. Dizi detaylarını al (sezon sayısı için)
+    const seriesDetailsResponse = await axios.get(`${TMDB_BASE_URL}/tv/${tvId}`, {
+      params: {
+        api_key: TMDB_API_KEY,
+        language: 'tr-TR'
+      }
+    });
+
+    const seriesDetails = seriesDetailsResponse.data;
+    const totalSeasons = seriesDetails.number_of_seasons;
+
+    if (totalSeasons === 0) {
+      return res.status(404).json({ error: 'Bu dizide hiç sezon bulunamadı' });
+    }
+
+    // 3. Rastgele sezon seç (1'den başlayarak)
+    const randomSeason = Math.floor(Math.random() * totalSeasons) + 1;
+
+    // 4. Seçilen sezonun detaylarını al
+    const seasonResponse = await axios.get(`${TMDB_BASE_URL}/tv/${tvId}/season/${randomSeason}`, {
+      params: {
+        api_key: TMDB_API_KEY,
+        language: 'tr-TR'
+      }
+    });
+
+    const seasonDetails = seasonResponse.data;
+    const totalEpisodes = seasonDetails.episodes.length;
+
+    if (totalEpisodes === 0) {
+      return res.status(404).json({ error: 'Bu sezonda hiç bölüm bulunamadı' });
+    }
+
+    // 5. Rastgele bölüm seç
+    const randomEpisodeIndex = Math.floor(Math.random() * totalEpisodes);
+    const randomEpisodeNumber = seasonDetails.episodes[randomEpisodeIndex].episode_number;
+
+    // 6. Seçilen bölümün detaylarını al
+    const episodeResponse = await axios.get(`${TMDB_BASE_URL}/tv/${tvId}/season/${randomSeason}/episode/${randomEpisodeNumber}`, {
+      params: {
+        api_key: TMDB_API_KEY,
+        language: 'tr-TR'
+      }
+    });
+
+    const episodeDetails = episodeResponse.data;
+
+    // 7. Sonucu hazırla
+    const result = {
+      series: {
+        id: tvId,
+        name: series.name,
+        original_name: series.original_name,
+        poster_path: series.poster_path,
+        backdrop_path: series.backdrop_path,
+        first_air_date: series.first_air_date,
+        overview: series.overview
+      },
+      season: {
+        season_number: randomSeason,
+        name: seasonDetails.name,
+        episode_count: totalEpisodes
+      },
+      episode: {
+        episode_number: randomEpisodeNumber,
+        name: episodeDetails.name,
+        overview: episodeDetails.overview,
+        still_path: episodeDetails.still_path,
+        air_date: episodeDetails.air_date,
+        vote_average: episodeDetails.vote_average,
+        runtime: episodeDetails.runtime
+      }
+    };
+
+    console.log(`✅ Random episode selected: ${series.name} S${randomSeason}E${randomEpisodeNumber} - ${episodeDetails.name}`);
+
+    res.json({
+      success: true,
+      randomEpisode: result
+    });
+
+  } catch (error) {
+    console.error('Random episode error:', error);
+    res.status(500).json({ 
+      error: 'Rastgele bölüm seçilirken hata oluştu',
+      details: error.message 
+    });
+  }
+});
+
+// ==============================================
+// END - RASTGELE BÖLÜM ÜRETİCİ SİSTEMİ
+// ==============================================
 
 app.listen(PORT, () => {
   console.log(`🎬 CineMind Backend server running on port ${PORT}`);

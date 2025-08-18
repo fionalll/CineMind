@@ -423,6 +423,14 @@
     line-clamp: 3;
   }
 
+  .line-clamp-4 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+  }
+
   /* Text colors */
   .text-primary {
     color: var(--text-primary);
@@ -434,6 +442,14 @@
 
   .text-muted {
     color: var(--text-muted);
+  }
+
+  .text-accent {
+    color: var(--accent);
+  }
+
+  .text-error {
+    color: var(--error);
   }
 
 
@@ -456,6 +472,10 @@
 
   .border-default {
     border-color: var(--border-color);
+  }
+
+  .border-3 {
+    border-width: 3px;
   }
 
   /* Loading States */
@@ -491,32 +511,114 @@
   .custom-scrollbar {
     /* Firefox için modern scrollbar */
     scrollbar-width: thin;
-    scrollbar-color: var(--primary) var(--background-tertiary);
+    scrollbar-color: var(--primary) transparent;
   }
 
   /* Webkit tabanlı tarayıcılar için (Chrome, Safari, Edge) */
   .custom-scrollbar::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
-    background: var(--background-tertiary);
+    background: transparent;
     border-radius: 10px;
-    margin: 4px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, var(--primary) 0%, var(--primary-hover) 100%);
+    background: linear-gradient(135deg, 
+      var(--primary) 0%, 
+      var(--accent) 50%, 
+      var(--primary) 100%);
     border-radius: 10px;
-    border: 2px solid var(--background-tertiary);
-    transition: all 0.3s ease;
+    border: none;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0.7;
+    box-shadow: 
+      0 0 8px rgba(var(--primary), 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, var(--accent) 0%, var(--primary) 100%);
-    border-color: var(--background-secondary);
-    box-shadow: 0 0 8px rgba(var(--primary), 0.3);
+    background: linear-gradient(135deg, 
+      var(--accent) 0%, 
+      var(--primary) 50%, 
+      var(--accent) 100%);
+    opacity: 1;
+    transform: scaleY(1.1);
+    box-shadow: 
+      0 0 15px rgba(var(--primary), 0.4),
+      0 0 25px rgba(var(--accent), 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:active {
+    background: var(--primary);
+    transform: scaleY(0.9);
+    box-shadow: 
+      0 0 20px rgba(var(--primary), 0.6),
+      inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Scrollbar hover efekti için container */
+  .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+    opacity: 1;
+  }
+
+  /* Ultra modern scrollbar variant */
+  .ultra-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) transparent;
+  }
+
+  .ultra-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  .ultra-scrollbar::-webkit-scrollbar-track {
+    background: rgba(var(--border-color), 0.1);
+    border-radius: 20px;
+    margin: 2px;
+  }
+
+  .ultra-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(45deg, 
+      transparent 0%,
+      var(--primary) 20%, 
+      var(--accent) 50%, 
+      var(--primary) 80%,
+      transparent 100%);
+    border-radius: 20px;
+    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    opacity: 0.6;
+    position: relative;
+  }
+
+  .ultra-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(45deg, 
+      var(--accent) 0%, 
+      var(--primary) 30%, 
+      var(--accent) 70%, 
+      var(--primary) 100%);
+    opacity: 1;
+    box-shadow: 
+      0 0 20px rgba(var(--primary), 0.5),
+      0 0 40px rgba(var(--accent), 0.3);
+    animation: scrollbarPulse 2s infinite ease-in-out;
+  }
+
+  @keyframes scrollbarPulse {
+    0%, 100% { 
+      box-shadow: 
+        0 0 20px rgba(var(--primary), 0.5),
+        0 0 40px rgba(var(--accent), 0.3);
+    }
+    50% { 
+      box-shadow: 
+        0 0 30px rgba(var(--primary), 0.7),
+        0 0 60px rgba(var(--accent), 0.5);
+    }
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:active {
@@ -616,5 +718,32 @@
 
   .horizontal-scroll::-webkit-scrollbar-corner {
     background: var(--background-secondary);
+  }
+
+  /* Modern Scrollbar Styles */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 10px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--accent) 0%, var(--primary) 100%);
+    border-radius: 10px;
+    transition: all 0.3s ease;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, var(--primary) 0%, var(--accent) 100%);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+  }
+
+  /* Firefox scrollbar */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) transparent;
   }
 }
