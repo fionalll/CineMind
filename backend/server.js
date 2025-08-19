@@ -1497,22 +1497,25 @@ app.get('/api/profile/by-username/:username', async (req, res) => {
 // GÜNÜN FİLMİ SİSTEMİ
 // ==============================================
 
-// Günün filmini getir
+// ==============================================
+// 1. ROTA - GÜNÜN FİLMİ SİSTEMİ (MEVCUT KODUNUZ)
+// ==============================================
 app.get('/api/movie-of-the-day', async (req, res) => {
   try {
-    console.log('🎬 Fetching movie of the day...');
+    console.log('🎬 Geliştirilmiş mantık ile günün filmi çekiliyor...');
     
-    // Bugünün tarihi ile deterministik film seçimi
     const today = new Date();
-    const dayOfMonth = today.getDate(); // 1-31 arası
-    const month = today.getMonth() + 1; // 1-12 arası
-    
-    // Popüler filmleri çek
+    const dayOfMonth = today.getDate();
+    const month = today.getMonth() + 1;
+    const year = today.getFullYear();
+
+    const randomPage = ((dayOfMonth + month + year) % 50) + 1;
+
     const tmdbResponse = await axios.get(`https://api.themoviedb.org/3/movie/popular`, {
       params: {
         api_key: process.env.TMDB_API_KEY,
         language: 'tr-TR',
-        page: 1
+        page: randomPage
       }
     });
 
@@ -1520,12 +1523,10 @@ app.get('/api/movie-of-the-day', async (req, res) => {
       throw new Error('Popüler filmler listesi alınamadı');
     }
 
-    // Günün sayısını kullanarak deterministik seçim yap
     const movies = tmdbResponse.data.results;
     const selectedIndex = (dayOfMonth + month) % movies.length;
     const selectedMovie = movies[selectedIndex];
 
-    // Seçilen filmin detaylarını çek
     const movieDetailsResponse = await axios.get(`https://api.themoviedb.org/3/movie/${selectedMovie.id}`, {
       params: {
         api_key: process.env.TMDB_API_KEY,
@@ -1536,7 +1537,6 @@ app.get('/api/movie-of-the-day', async (req, res) => {
 
     const movieDetails = movieDetailsResponse.data;
 
-    // Günün filmi verisi
     const movieOfTheDay = {
       id: movieDetails.id,
       title: movieDetails.title,
@@ -1547,10 +1547,10 @@ app.get('/api/movie-of-the-day', async (req, res) => {
       vote_average: movieDetails.vote_average,
       genres: movieDetails.genres,
       runtime: movieDetails.runtime,
-      date: today.toISOString().split('T')[0] // YYYY-MM-DD formatında
+      date: today.toISOString().split('T')[0]
     };
 
-    console.log(`✅ Movie of the day selected: ${movieDetails.title}`);
+    console.log(`✅ Günün filmi seçildi: [Sayfa: ${randomPage}] ${movieDetails.title}`);
     
     res.json({
       success: true,
@@ -1558,7 +1558,7 @@ app.get('/api/movie-of-the-day', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Movie of the day error:', error);
+    console.error('Günün filmi hatası:', error);
     res.status(500).json({ 
       error: 'Günün filmi alınırken hata oluştu',
       details: error.message 
@@ -1566,6 +1566,36 @@ app.get('/api/movie-of-the-day', async (req, res) => {
   }
 });
 
+
+// ==========================================================
+// 2. ROTA - FİLM DETAYI GETİRME (YENİ EKLENEN KOD)
+// Bu, "Öne Çıkan Film" özelliğinin çalışmasını sağlayacak
+// ==========================================================
+app.get('/api/movie/:movieId', async (req, res) => {
+  const { movieId } = req.params;
+
+  console.log(`🎬 ID ile film detayı çekiliyor: ${movieId}`);
+
+  try {
+    const movieDetailsResponse = await axios.get(`https://api.themoviedb.org/3/movie/${movieId}`, {
+      params: {
+        api_key: process.env.TMDB_API_KEY,
+        language: 'tr-TR',
+        append_to_response: 'credits,videos'
+      }
+    });
+
+    // Frontend, bu rotadan gelen verinin direkt film detayı objesi olmasını bekliyor.
+    res.json(movieDetailsResponse.data);
+
+  } catch (error) {
+    console.error(`ID ${movieId} için film detayı hatası:`, error.message);
+    res.status(404).json({ 
+      error: 'Film detayları alınırken hata oluştu veya film bulunamadı',
+      details: error.message 
+    });
+  }
+});
 // ==============================================
 // END - GÜNÜN FİLMİ SİSTEMİ
 // ==============================================

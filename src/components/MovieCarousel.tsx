@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import MovieCard from './MovieCard';
 import type { Movie, MovieResponse } from '../types';
 
@@ -43,23 +43,23 @@ const MovieCarousel = ({ title, movies: moviesProp, loading: loadingProp, fetchM
     }
   }, [loadingProp]);
 
-  const scrollLeft = () => {
+  const scrollLeft = useCallback(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollBy({
         left: -300,
         behavior: 'smooth'
       });
     }
-  };
+  }, []);
 
-  const scrollRight = () => {
+  const scrollRight = useCallback(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollBy({
         left: 300,
         behavior: 'smooth'
       });
     }
-  };
+  }, []);
 
   if (loading) {
     return (
@@ -89,7 +89,7 @@ const MovieCarousel = ({ title, movies: moviesProp, loading: loadingProp, fetchM
   return (
     <div className="mb-6 md:mb-8">
       <div className="flex items-center justify-between mb-4 md:mb-6">
-        <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">{title}</h2>
+        <h2 className="text-lg sm:text-xl lg:text-2xl font-bold ">{title}</h2>
         
         {/* Scroll buttons - Hidden on mobile, visible on larger screens */}
         <div className="hidden sm:flex space-x-2">

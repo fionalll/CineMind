@@ -1,44 +1,43 @@
-// Import the functions you need from the SDKs you need
+// Gerekli Firebase fonksiyonlarını import et
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {   // Add yours firebase 
-  apiKey: "   ",
-  authDomain: "  ",
-  projectId: "   ",
-  storageBucket: "    ",
-  messagingSenderId: "   ",
-  appId: "   ",
-  measurementId: "  "
+// Firebase yapılandırma bilgilerini .env.local dosyasından güvenli bir şekilde oku
+// Vite projelerinde bu işlem "import.meta.env" ile yapılır ve değişkenlerin VITE_ ile başlaması gerekir.
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_API_KEY,
+  authDomain: import.meta.env.VITE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_APP_ID,
+  measurementId: import.meta.env.VITE_MEASUREMENT_ID
 };
 
-// Initialize Firebase app first
+// Firebase uygulamasını başlat
 const app = initializeApp(firebaseConfig);
 
-// Initialize Auth immediately after app
+// Auth (Kimlik Doğrulama) servisini başlat
 const auth = getAuth(app);
 
-// Initialize Firestore
+// Firestore (Veritabanı) servisini başlat
 const db = getFirestore(app);
 
-// Initialize Analytics only in browser environment to prevent SSR issues
+// Analytics servisini başlat (sadece tarayıcıda çalışacak şekilde)
 let analytics;
 if (typeof window !== "undefined") {
   try {
     analytics = getAnalytics(app);
   } catch (error) {
-    console.warn('Analytics initialization failed:', error);
+    console.warn('Analytics başlatılırken hata oluştu:', error);
   }
 }
 
-// Debug: Log successful Firebase initialization
-console.log('🔥 Firebase initialized successfully');
-console.log('📧 Auth instance:', auth);
-console.log('🗄️ Firestore instance:', db);
+// Konsola Firebase'in başarıyla başlatıldığına dair bir mesaj yazdır
+console.log('🔥 Firebase başarıyla başlatıldı');
 
+// Bu servisleri projenin diğer yerlerinde kullanabilmek için export et
 export { auth, analytics, app, db };
 export default app;

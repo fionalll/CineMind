@@ -8,6 +8,7 @@ export interface Movie {
   voteAverage: number;
   voteCount: number;
   backdropPath: string | null;
+  genres?: Genre[]; // Film türleri - koleksiyonum sayfası için gerekli
   reason?: string; // Gemini'den gelen öneri sebebi
   watchedAt?: Date; // İzlenme tarihi
   media_type?: 'movie' | 'tv' | 'person';

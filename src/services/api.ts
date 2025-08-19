@@ -50,6 +50,20 @@ export const movieService = {
       throw new Error('Beklenmeyen bir hata oluştu');
     }
   },
+  async getMovieDetails(movieId: number): Promise<any> {
+    try {
+      // Axios 'api' instance'ını kullanarak istek atıyoruz
+      const response = await api.get(`/movie/${movieId}`, {
+        params: {
+          append_to_response: 'credits,videos'
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Film detayları alınırken hata oluştu (ID: ${movieId})`, error);
+      throw error;
+    }
+  },
 
   async getGenres(): Promise<{ genres: Genre[] }> {
     try {

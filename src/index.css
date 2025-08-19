@@ -746,4 +746,594 @@
     scrollbar-width: thin;
     scrollbar-color: var(--accent) transparent;
   }
+
+  /* ==============================================
+     KOLEKSİYONUM SAYFASI - ŞEFFAF RAF TASARIMLARI
+     CodePen referansına uygun şeffaf arka plan
+     ============================================== */
+
+  /* Köşe Dekorasyonu */
+  .corner-decoration {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-height: 290px;
+    min-width: 310px;
+    z-index: 1;
+  }
+
+  .spider-web {
+    width: 100%;
+    height: 100%;
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M50,10 L50,90 M10,50 L90,50 M25,25 L75,75 M75,25 L25,75" stroke="rgba(255,255,255,0.1)" stroke-width="0.5" fill="none"/><circle cx="50" cy="50" r="30" stroke="rgba(255,255,255,0.05)" stroke-width="0.5" fill="none"/><circle cx="50" cy="50" r="20" stroke="rgba(255,255,255,0.05)" stroke-width="0.5" fill="none"/><circle cx="50" cy="50" r="10" stroke="rgba(255,255,255,0.05)" stroke-width="0.5" fill="none"/></svg>');
+    background-repeat: no-repeat;
+    background-size: contain;
+    opacity: 0.3;
+  }
+
+  /* Floating Dekoratif Objeler */
+  .floating-decorations {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .decoration-item {
+    position: absolute;
+    z-index: 1;
+  }
+
+  .potion-1 {
+    top: 15%;
+    left: 5%;
+    animation: floatSlow 6s ease-in-out infinite;
+  }
+
+  .candle-1 {
+    top: 60%;
+    right: 8%;
+    animation: floatSlow 4s ease-in-out infinite reverse;
+  }
+
+  .vase-1 {
+    bottom: 20%;
+    left: 10%;
+    animation: floatSlow 5s ease-in-out infinite;
+  }
+
+  /* Raf Odası Container */
+  .shelf-room {
+    perspective: 1000px;
+    padding: 1rem 0;
+  }
+
+  /* Tür Etiketi */
+  .genre-label {
+    position: absolute;
+    bottom: -2.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    text-align: center;
+    padding: 0.5rem 1rem;
+  }
+
+  .genre-label span {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  /* Şeffaf Raf Ana Container */
+  .transparent-shelf {
+    width: 100%;
+    max-width: 20rem;
+    margin: 0 auto;
+    position: relative;
+    transition: all 0.3s ease;
+  }
+
+  .transparent-shelf:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Boş Raf Metni */
+  .empty-shelf-text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 4rem;
+    font-style: italic;
+    opacity: 0.6;
+  }
+
+  /* Raf Tahtası */
+  .shelf-board {
+    width: 100%;
+    border-bottom: 1rem solid rgba(86, 45, 29, 0.8); /* Daha kalın */
+    background: transparent; /* Şeffaf arka plan */
+    position: relative;
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    min-height: 4rem; /* Daha kısa */
+    border-radius: 0.25rem 0.25rem 0 0;
+    box-shadow: 
+      0 2px 4px rgba(0, 0, 0, 0.1), /* Hafif gölge */
+      inset 0 1px 0 rgba(255, 255, 255, 0.05); /* Çok hafif iç parlaklık */
+  }
+
+  /* Raf Gölgesi */
+  .shelf-board-shadow {
+    position: absolute;
+    bottom: -2rem;
+    height: 1.25rem;
+    left: 1rem;
+    right: 1rem;
+    z-index: -1;
+    box-shadow: inset 0px 4px 6px -3px rgba(0, 0, 0, 0.6);
+    background: transparent;
+    border-radius: 0 0 0.25rem 0.25rem;
+  }
+
+  /* Raf Destekleri */
+  .shelf-support {
+    content: '';
+    display: block;
+    width: 0.75rem;
+    height: 1.5rem;
+    position: absolute;
+    bottom: -2.25rem;
+    background: linear-gradient(to bottom, #3e2116 0%, #2d1810 100%);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  .shelf-support.left {
+    left: 1rem;
+    box-shadow: 3px -1px 6px -3px #000;
+  }
+
+  .shelf-support.right {
+    right: 1rem;
+    box-shadow: -3px -1px 6px -3px #000;
+  }
+
+  /* Kitaplar Container */
+  .books-container {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.25rem;
+    margin-right: 1rem;
+  }
+
+  .book {
+    position: relative;
+    width: 1.75rem;
+    height: 5.5rem;
+    transform-style: preserve-3d;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  /* Kitap Varyasyonları */
+  .book-1 {
+    transform: rotateY(-5deg) rotateX(1deg);
+    height: 5.75rem;
+  }
+
+  .book-1 .book-spine {
+    background: linear-gradient(to bottom, #8B4513 0%, #654321 100%);
+  }
+
+  .book-2 {
+    transform: rotateY(-3deg) rotateX(0.5deg);
+    height: 5.5rem;
+  }
+
+  .book-2 .book-spine {
+    background: linear-gradient(to bottom, #D2691E 0%, #A0522D 100%);
+  }
+
+  .book-3 {
+    transform: rotateY(-7deg) rotateX(1deg);
+    height: 5.25rem;
+  }
+
+  .book-3 .book-spine {
+    background: linear-gradient(to bottom, #8B0000 0%, #5A0000 100%);
+  }
+
+  /* Kitap Sırtı */
+  .book-spine {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.125rem;
+    overflow: hidden;
+    box-shadow: 
+      0 2px 4px rgba(0, 0, 0, 0.3),
+      inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Kitap Renkleri */
+  .book-spine-red {
+    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  }
+
+  .book-spine-blue {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  }
+
+  .book-spine-green {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  }
+
+  .book-spine::before {
+    content: '';
+    position: absolute;
+    top: 15%;
+    left: 0;
+    right: 0;
+    height: 0.5rem;
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .book-spine::after {
+    content: '';
+    position: absolute;
+    bottom: 5%;
+    left: 0;
+    right: 0;
+    height: 0.5rem;
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  /* Kitap Kapağı */
+  .book-cover {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0.0625rem;
+    transition: all 0.3s ease;
+    opacity: 0.9;
+    mix-blend-mode: multiply;
+  }
+
+  /* Kitap Parlaklık Efekti */
+  .book-shine {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.3) 50%,
+      transparent 100%
+    );
+    transition: left 0.4s ease;
+    pointer-events: none;
+  }
+
+  /* Raf Dekoratif Objeler */
+  .shelf-decorations {
+    margin-left: auto;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Kafa Tasası */
+  .shelf-skull {
+    width: 2.5rem;
+    height: 2rem;
+    background: #f7eccc;
+    border-radius: 50%;
+    position: relative;
+    box-shadow: 
+      0 2px 4px rgba(0, 0, 0, 0.3),
+      inset 0 1px 2px rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+  }
+
+  .shelf-skull::before {
+    content: '';
+    display: block;
+    position: absolute;
+    bottom: -0.15rem;
+    background: #f7eccc;
+    width: 2.75rem;
+    height: 1rem;
+    left: 50%;
+    margin-left: -1.375rem;
+    border-radius: 100%;
+  }
+
+  .transparent-shelf:hover .shelf-skull {
+    transform: scale(1.1);
+  }
+
+  .skull-eyes {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .skull-eye {
+    width: 0.5rem;
+    height: 0.75rem;
+    background: #000;
+    border-radius: 50%;
+    transition: background 0.3s ease;
+  }
+
+  .skull-eye::before {
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 6.25px 0 6.25px 10.85px;
+    border-color: transparent transparent transparent #f7eccc;
+    content: '';
+    position: absolute;
+    top: -7.5px;
+  }
+
+  .skull-eye:first-child::before {
+    transform: rotate(180deg);
+    left: -3px;
+  }
+
+  .transparent-shelf:hover .skull-eye {
+    background: #ab1717;
+  }
+
+  .skull-teeth {
+    display: flex;
+    justify-content: center;
+    position: absolute;
+    bottom: -0.375rem;
+    width: 100%;
+    gap: 0.125rem;
+  }
+
+  .tooth {
+    background: #f7eccc;
+    height: 0.45rem;
+    width: 0.35rem;
+    border-bottom-left-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
+    border-bottom: 1.5px solid #562d1d;
+  }
+
+  /* İksir Şişesi */
+  .shelf-potion {
+    width: 2.5rem;
+    height: 2.5rem;
+    position: relative;
+  }
+
+  .potion-bottle {
+    background: linear-gradient(to top, rgba(255,242,237,0.5) 97.5%, rgba(255,255,255,0) 100%);
+    height: 2.5rem;
+    width: 2.5rem;
+    border-radius: 30% 30% 25% 25%;
+    position: relative;
+    border: 0.25rem solid #fff2ed;
+    border-top: none;
+  }
+
+  .potion-bottle::after {
+    content: '';
+    display: block;
+    background: linear-gradient(to bottom, rgba(255,242,237,0.5) 95%, rgba(255,255,255,0) 100%);
+    border: 0.15rem solid #fff2ed;
+    border-bottom: none;
+    border-top: none;
+    position: absolute;
+    height: 1.05rem;
+    width: 1rem;
+    top: -0.975rem;
+    left: 50%;
+    margin-left: -0.65rem;
+    border-radius: 5px;
+    z-index: -1;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .potion-bottle::before {
+    content: '';
+    display: block;
+    background: transparent;
+    position: absolute;
+    height: 0.125rem;
+    width: 1.15rem;
+    top: -1rem;
+    left: 50%;
+    margin-left: -0.7075rem;
+    border-radius: 75%;
+    z-index: -1;
+    border: 0.125rem solid #fff2ed;
+    border-bottom: none;
+  }
+
+  .potion-liquid {
+    background: #36af7d;
+    height: 1.5rem;
+    width: 2rem;
+    border-radius: 3px 3px 25% 25%;
+    position: absolute;
+    left: 50%;
+    margin-left: -1rem;
+    bottom: -0.05rem;
+    animation: glow 4.2s ease infinite;
+  }
+
+  .potion-bubble {
+    z-index: 9999;
+    animation: bubble 1.8s ease infinite, glow 4.2s ease infinite;
+    animation-delay: 0.2s;
+    background: #2cab77;
+    height: 10px;
+    width: 10px;
+    border-radius: 100%;
+    left: 0.85rem;
+    bottom: 1.5rem;
+    position: absolute;
+    opacity: 1;
+  }
+
+  .potion-bubble.two {
+    animation-delay: 0.1s;
+    height: 5px;
+    width: 5px;
+    left: 0.75rem;
+  }
+
+  /* Mum */
+  .shelf-candle {
+    width: 1.5rem;
+    height: 3rem;
+    position: relative;
+  }
+
+  .candle-stick {
+    width: 100%;
+    height: 2.5rem;
+    background: linear-gradient(to bottom, #8B4513 0%, #654321 100%);
+    border-radius: 0.125rem;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .candle-flame {
+    width: 0.5rem;
+    height: 0.75rem;
+    background: radial-gradient(circle, #ffff00 0%, #ff6600 70%, #ff0000 100%);
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    position: absolute;
+    top: -0.375rem;
+    left: 50%;
+    transform: translateX(-50%);
+    animation: flicker 2s ease-in-out infinite;
+  }
+
+  .candle-wax {
+    position: absolute;
+    bottom: -0.25rem;
+    left: 0.25rem;
+    width: 0.25rem;
+    height: 1rem;
+    background: linear-gradient(to bottom, #f5f5dc 0%, transparent 100%);
+    border-radius: 0 0 0.25rem 0.25rem;
+  }
+
+  /* Animasyonlar */
+  @keyframes floatSlow {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  @keyframes bubble {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      bottom: 4.5rem;
+    }
+  }
+
+  @keyframes glow {
+    0% {
+      background: #36af7d;
+    }
+    50% {
+      background: #12bf78;
+    }
+    100% {
+      background: #36af7d;
+    }
+  }
+
+  @keyframes flicker {
+    0%, 100% {
+      transform: translateX(-50%) scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: translateX(-50%) scale(1.1) rotate(2deg);
+      opacity: 0.8;
+    }
+  }
+
+  /* Responsive Tasarım */
+  @media (max-width: 768px) {
+    .transparent-shelf {
+      max-width: 100%;
+    }
+
+    .shelf-board {
+      padding: 0 1rem;
+      min-height: 5rem;
+    }
+
+    .book {
+      width: 1.5rem;
+      height: 4.5rem;
+    }
+
+    .book-1,
+    .book-2,
+    .book-3 {
+      height: 4.5rem;
+    }
+
+    .shelf-skull {
+      width: 2rem;
+      height: 1.5rem;
+    }
+
+    .shelf-potion {
+      width: 2rem;
+      height: 2rem;
+    }
+
+    .potion-bottle {
+      width: 2rem;
+      height: 2rem;
+    }
+
+    .shelf-candle {
+      width: 1.25rem;
+      height: 2.5rem;
+    }
+
+    .candle-stick {
+      height: 2rem;
+    }
+  }
+
+  /* Boş Raf Özel Stil */
+  .empty-shelf-room .transparent-shelf {
+    justify-content: center;
+  }
+
+  .empty-shelf-room .shelf-board {
+    justify-content: center;
+    min-height: 8rem;
+  }
 }

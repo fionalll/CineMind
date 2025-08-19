@@ -9,6 +9,7 @@ import {
   onSnapshot,
   Timestamp 
 } from 'firebase/firestore';
+import { movieService } from '../services/api';
 import type { Movie } from '../types';
 
 interface WatchedMovie extends Movie {
@@ -92,8 +93,38 @@ export const WatchedProvider: React.FC<{ children: React.ReactNode }> = ({ child
     console.log('🔄 WatchedContext.addToWatched called for:', movie.title, 'User:', currentUser.uid);
     
     try {
+      // Eğer film türleri eksikse, TMDB'den tam detayları al
+      let completeMovie = movie;
+      if (!movie.genres || movie.genres.length === 0) {
+        console.log('📡 Film türleri eksik, TMDB API\'den tam detayları alınıyor...');
+        try {
+          const detailedMovie = await movieService.getMovieDetails(movie.id);
+          
+          // TMDB'den gelen veriyi Movie formatına dönüştür
+          completeMovie = {
+            ...movie,
+            genres: detailedMovie.genres || [], // TMDB'den gelen türler
+            overview: detailedMovie.overview || movie.overview,
+            voteAverage: detailedMovie.vote_average || movie.voteAverage,
+            voteCount: detailedMovie.vote_count || movie.voteCount,
+            releaseDate: detailedMovie.release_date || movie.releaseDate,
+            backdropPath: detailedMovie.backdrop_path || movie.backdropPath,
+            media_type: 'movie' // Koleksiyonum için gerekli
+          };
+          
+          console.log('✅ Film detayları TMDB\'den başarıyla alındı:', completeMovie.genres);
+        } catch (detailError) {
+          console.warn('⚠️ Film detayları alınamadı, mevcut verilerle devam ediliyor:', detailError);
+          // Hata durumunda da türü movie olarak ayarla
+          completeMovie = {
+            ...movie,
+            media_type: 'movie'
+          };
+        }
+      }
+
       const watchedMovie: WatchedMovie = {
-        ...movie,
+        ...completeMovie,
         watchedAt: new Date()
       };
 

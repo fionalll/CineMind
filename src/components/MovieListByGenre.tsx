@@ -62,7 +62,7 @@ const MovieListByGenre = ({ genreId, genreName, type = 'movie' }: MovieListByGen
   return (
     <div className="mb-6 md:mb-8">
       <div className="flex items-center justify-between mb-4 md:mb-6">
-        <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">
+        <h2 className="text-lg sm:text-xl lg:text-2xl font-bold ">
           {genreName} {type === 'tv' ? 'Dizileri' : 'Filmleri'}
         </h2>
         <span className="text-gray-400 text-xs sm:text-sm">
