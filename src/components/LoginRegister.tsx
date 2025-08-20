@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import { api } from '../services/api';
 
 interface LoginRegisterProps {
   onSuccess?: () => void;
@@ -42,7 +42,7 @@ const LoginRegister: React.FC<LoginRegisterProps> = ({ onSuccess }) => {
       setUsernameStatus('checking');
       setUsernameMessage('Kontrol ediliyor...');
 
-      const response = await axios.post('http://localhost:5002/api/auth/check-username', {
+      const response = await api.post('/auth/check-username', {
         username: usernameToCheck
       });
 

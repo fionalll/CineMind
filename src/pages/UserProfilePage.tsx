@@ -516,8 +516,12 @@ interface ProfileData {
                           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                             isFollowing 
                               ? 'border border-default text-primary hover:bg-secondary' 
-                              : 'bg-primary text-white hover:opacity-80'
+                              : 'hover:opacity-80'
                           } ${isFollowLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          style={{
+                            backgroundColor: !isFollowing ? 'var(--accent)' : undefined,
+                            color: !isFollowing ? 'var(--background-primary)' : undefined,
+                          }}
                         >
                           {isFollowLoading ? '...' : isFollowing ? 'Takipten Çık' : 'Takip Et'}
                         </button>

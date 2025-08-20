@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { COLOR_AVATARS, ANIMAL_AVATARS } from '../config/avatars';
@@ -7,9 +7,14 @@ import { useTheme } from '../context/ThemeContext';
 import Navbar from '../components/Navbar';
 import BackButton from '../components/BackButton';
 import SettingsModal from '../components/SettingsModal';
+import { api } from '../services/api';
 
 const HesabimPage: React.FC = () => {
   const navigate = useNavigate();
+  const [isSearching, setIsSearching] = useState(false); // Arama modu aktif mi?
+  const [searchQuery, setSearchQuery] = useState('');   // Arama çubuğuna yazılan metin
+  const [searchResults, setSearchResults] = useState<User[]>([]); // Arama sonuçları
+  const [searchLoading, setSearchLoading] = useState(false); // Arama yükleniyor mu?
   const { currentUser, avatar, updateUsername, changeEmail, changePassword, deleteAccount } = useAuth();
   const { watchedMovies } = useWatched();
   const {} = useTheme();
@@ -42,6 +47,67 @@ const HesabimPage: React.FC = () => {
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+
+  // User type tanımı
+  interface User {
+    uid: string;
+    displayName: string;
+    username: string;
+    avatar?: string;
+  }
+
+  // Takipçiler ve takip edilenler state'leri
+  const [followers, setFollowers] = useState<User[]>([]);
+  const [following, setFollowing] = useState<User[]>([]);
+  const [followersLoading, setFollowersLoading] = useState(false);
+  const [followingLoading, setFollowingLoading] = useState(false);
+
+
+  // 1. useEffect: Takipçi ve Takip Edilen Verilerini Çeker
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const fetchFollowData = async () => {
+      setFollowersLoading(true);
+      setFollowingLoading(true);
+      try {
+        const [followingResponse, followersResponse] = await Promise.all([
+          api.get(`/users/${currentUser.uid}/following`),
+          api.get(`/users/${currentUser.uid}/followers`)
+        ]);
+        setFollowing(followingResponse.data);
+        setFollowers(followersResponse.data);
+      } catch (error) {
+        console.error("Takip bilgileri alınamadı:", error);
+      } finally {
+        setFollowersLoading(false);
+        setFollowingLoading(false);
+      }
+    };
+    fetchFollowData();
+  }, [currentUser]);
+
+  // 2. useEffect: Kullanıcı Arama Mantığını Yönetir
+  useEffect(() => {
+    if (!isSearching || searchQuery.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    const delayDebounceFn = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const response = await api.get<User[]>(`/users/search?query=${searchQuery}`);
+        setSearchResults(response.data);
+      } catch (error) {
+        console.error("Kullanıcı araması başarısız:", error);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery, isSearching]);
+
+  // === DÜZELTİLMİŞ BÖLÜM SONU ===
 
   const handleUpdateUsername = async () => {
     if (!newUsername.trim()) {
@@ -201,6 +267,82 @@ const HesabimPage: React.FC = () => {
     setShowDeleteModal(true);
   };
 
+  // Takipçileri ve takip edilenleri getiren fonksiyonlar
+  const fetchFollowers = async () => {
+    if (!currentUser?.uid) return;
+    
+    setFollowersLoading(true);
+    try {
+      const response = await api.get(`/users/${currentUser.uid}/followers`);
+      const followersData = response.data || [];
+      setFollowers(Array.isArray(followersData) ? followersData : []);
+    } catch (error) {
+      console.error('Takipçiler getirilirken hata:', error);
+      setFollowers([]);
+    } finally {
+      setFollowersLoading(false);
+    }
+  };
+
+  const fetchFollowing = async () => {
+    if (!currentUser?.uid) return;
+    
+    setFollowingLoading(true);
+    try {
+      const response = await api.get(`/users/${currentUser.uid}/following`);
+      const followingData = response.data || [];
+      setFollowing(Array.isArray(followingData) ? followingData : []);
+    } catch (error) {
+      console.error('Takip edilenler getirilirken hata:', error);
+      setFollowing([]);
+    } finally {
+      setFollowingLoading(false);
+    }
+  };
+
+  // Component mount olduğunda verileri çek
+useEffect(() => {
+    if (currentUser?.uid) {
+      fetchFollowers();
+      fetchFollowing();
+    }
+  }, [currentUser?.uid]);
+
+  // Kullanıcı profiline yönlendirme fonksiyonu
+  const handleUserClick = (user: User) => {
+    navigate(`/profile/${user.username}`);
+  };
+
+  // Avatar render fonksiyonu
+  const renderUserAvatar = (user: User) => {
+    if (user.avatar && user.avatar.startsWith('color_')) {
+      const colorAvatar = COLOR_AVATARS.find(a => a.id === user.avatar);
+      return (
+        <div
+          className="w-12 h-12 rounded-full border-2 border-accent flex items-center justify-center text-white text-sm font-bold"
+          style={{ backgroundColor: colorAvatar?.value || '#ffffffff' }}
+        >
+          {user.displayName?.[0]?.toUpperCase() || 'U'}
+        </div>
+      );
+    } else if (user.avatar && user.avatar.startsWith('animal_')) {
+      const animalAvatar = ANIMAL_AVATARS.find(a => a.id === user.avatar);
+      return (
+        <img
+          src={animalAvatar?.src || '/avatars/bear.png'}
+          alt="Avatar"
+          className="w-12 h-12 rounded-full border-2 border-accent object-cover"
+        />
+      );
+    } else {
+      return (
+        <div className="w-12 h-12 rounded-full border-2 border-accent flex items-center justify-center bg-secondary text-primary text-sm font-bold">
+          {user.displayName?.[0]?.toUpperCase() || 'U'}
+        </div>
+      );
+    }
+  };
+
   return (
     <div>
       <div className="min-h-screen bg-primary">
@@ -216,9 +358,9 @@ const HesabimPage: React.FC = () => {
             <div className="text-center lg:text-left mb-6">
               <h2 className="text-3xl font-bold text-primary mb-6">Profil Bilgileri</h2>
               
-              <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6">
+              <div className="flex flex-col lg:flex-row items-center lg:items-center gap-6">
                 {/* Avatar gösterimi - Daha büyük */}
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 lg:mr-6">
                   <div className="mb-4 relative group cursor-pointer" onClick={() => setShowSettingsModal(true)}>
                     {avatar && avatar.startsWith('color_') ? (
                       <div
@@ -256,7 +398,7 @@ const HesabimPage: React.FC = () => {
               </div>
 
               {/* Kullanıcı Bilgileri - Tamamen yeniden tasarlandı */}
-              <div className="flex-1">
+              <div className="flex-1 text-center lg:text-left">
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-2xl font-bold text-primary mb-2">
@@ -318,6 +460,140 @@ const HesabimPage: React.FC = () => {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Sağ Sütun: Takipçiler ve Takip Edilenler */}
+          <div className="lg:col-span-1">
+            <div className="space-y-6">
+            <div className="bg-secondary bg-opacity-50 p-4 rounded-lg">
+  {isSearching ? (
+    // ARAMA MODU AKTİFSE BU GÖRÜNECEK
+    <div>
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Kullanıcı adı ara..."
+          className="w-full bg-background-tertiary p-2 rounded focus:outline-none focus:ring-2 focus:ring-accent"
+          autoFocus
+        />
+        <button onClick={() => { setIsSearching(false); setSearchQuery(''); }} className="text-sm text-text-secondary hover:text-text-primary">
+          İptal
+        </button>
+      </div>
+      {/* Arama Sonuçları */}
+      <div className="mt-4 space-y-2 max-h-48 overflow-y-auto">
+        {searchLoading && <p className="text-sm text-center text-text-secondary">Aranıyor...</p>}
+        {!searchLoading && searchResults.length > 0 && searchResults.map(user => (
+          <div key={user.uid} onClick={() => handleUserClick(user)} className="flex items-center p-2 rounded hover:bg-background-tertiary cursor-pointer">
+            {renderUserAvatar(user)}
+            <div className="ml-3">
+              <p className="font-semibold text-primary">{user.displayName}</p>
+              <p className="text-xs text-secondary">@{user.username}</p>
+            </div>
+          </div>
+        ))}
+        {!searchLoading && searchQuery.length >= 2 && searchResults.length === 0 && (
+          <p className="text-sm text-center text-text-secondary">Sonuç bulunamadı.</p>
+        )}
+      </div>
+    </div>
+  ) : (
+    // ARAMA MODU KAPALIYSA BU GÖRÜNECEK
+    <button 
+      onClick={() => setIsSearching(true)}
+      className="w-full text-left flex items-center gap-3"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+      <span className="font-semibold text-primary">Yeni Kullanıcılar Ara</span>
+    </button>
+  )}
+</div>
+
+              {/* Takipçilerim Bölümü */}
+              <div className="bg-secondary bg-opacity-50 rounded-lg p-4">
+                <h3 className="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+                  Takipçilerim
+                  <span className="text-sm font-normal text-secondary">({followers?.length || 0})</span>
+                </h3>
+                
+                <div className="relative">
+                  {followersLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent"></div>
+                    </div>
+                  ) : followers && followers.length > 0 ? (
+                    <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
+                      {followers.map((follower: User) => (
+                        <div
+                          key={follower.uid}
+                          onClick={() => handleUserClick(follower)}
+                          className="flex-shrink-0 cursor-pointer group"
+                        >
+                          <div className="text-center">
+                            <div className="mb-2 transition-transform duration-200 group-hover:scale-105">
+                              {renderUserAvatar(follower)}
+                            </div>
+                            <div className="text-xs text-secondary group-hover:text-primary transition-colors max-w-[60px] truncate">
+                              @{follower.username || follower.displayName}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-secondary">
+                      
+                      <div className="text-sm">Henüz takipçin yok</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Takip Ettiklerim Bölümü */}
+              <div className="bg-secondary bg-opacity-50 rounded-lg p-4">
+                <h3 className="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+                  
+                  Takip Ettiklerim
+                  <span className="text-sm font-normal text-secondary">({following?.length || 0})</span>
+                </h3>
+                
+                <div className="relative">
+                  {followingLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent"></div>
+                    </div>
+                  ) : following && following.length > 0 ? (
+                    <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
+                      {following.map((followedUser: User) => (
+                        <div
+                          key={followedUser.uid}
+                          onClick={() => handleUserClick(followedUser)}
+                          className="flex-shrink-0 cursor-pointer group"
+                        >
+                          <div className="text-center">
+                            <div className="mb-2 transition-transform duration-200 group-hover:scale-105">
+                              {renderUserAvatar(followedUser)}
+                            </div>
+                            <div className="text-xs text-secondary group-hover:text-primary transition-colors max-w-[60px] truncate">
+                              @{followedUser.username || followedUser.displayName}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-secondary">
+                      <div className="text-sm">Henüz kimseyi takip etmiyorsun</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
             </div>
           </div>
         </div>

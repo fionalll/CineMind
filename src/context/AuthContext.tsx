@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth } from '../firebase/config';
+import { api } from '../services/api';
 import type { User } from 'firebase/auth';
 import { 
   signInWithEmailAndPassword, 
@@ -95,23 +96,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (email: string, password: string, username: string) => {
     try {
       // Backend'e kayıt isteği gönder (Firebase Auth + Firestore işlemleri backend'te yapılıyor)
-      const response = await fetch('http://localhost:5002/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-          username,
-          displayName: username
-        })
+      const response = await api.post('/auth/register', {
+        email,
+        password,
+        username,
+        displayName: username
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Kayıt işlemi başarısız');
+      // Axios response object yapısı { data, status, ... }
+      if (response.status !== 201 && response.status !== 200) {
+        throw new Error(response.data?.error || 'Kayıt işlemi başarısız');
       }
 
       // Başarılı kayıt sonrası Firebase'e giriş yap
@@ -119,7 +113,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     } catch (error: any) {
       console.error('Registration error:', error);
-      throw error;
+      // Eğer axios error ise, response'dan ayrıntılı hata mesajını al
+      if (error.response && error.response.data && error.response.data.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error(error.message || 'Kayıt işlemi sırasında hata oluştu');
     }
   };
 

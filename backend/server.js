@@ -15,9 +15,10 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 
 // Initialize Firebase Admin SDK
 if (!admin.apps.length) {
+  const serviceAccountPath = path.join(__dirname, 'serviceAccountKey.json');
   admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
-    // Firebase project ID'si gerekirse buraya eklenebilir
+    credential: admin.credential.cert(serviceAccountPath),
+    projectId: 'film-ana' // serviceAccountKey.json dosyasından alınan project_id
   });
 }
 
@@ -1124,6 +1125,126 @@ app.get('/api/users/:userId/follow-stats', async (req, res) => {
   }
 });
 
+// TAKİPÇİLER LİSTESİNİ GETİRİR
+app.get('/api/users/:userId/followers', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    console.log(`🔍 Fetching FOLLOWERS list for user: ${userId}`);
+    
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+    }
+    const followerIds = userDoc.data().followers || [];
+
+    if (followerIds.length === 0) {
+      return res.json([]);
+    }
+
+    const userPromises = followerIds.map(id => db.collection('users').doc(id).get());
+    const userDocs = await Promise.all(userPromises);
+    
+    const followersList = userDocs
+      .map(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            username: data.username,
+            displayName: data.displayName,
+            avatar: data.avatar || null
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    res.json(followersList);
+  } catch (error) {
+    res.status(500).json({ error: 'Takipçiler listesi alınamadı' });
+  }
+});
+
+
+// TAKİPÇİLER LİSTESİNİ GETİRİR
+app.get('/api/users/:userId/followers', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    console.log(`🔍 Fetching FOLLOWERS list for user: ${userId}`);
+    
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+    }
+    const followerIds = userDoc.data().followers || [];
+
+    if (followerIds.length === 0) {
+      return res.json([]);
+    }
+
+    const userPromises = followerIds.map(id => db.collection('users').doc(id).get());
+    const userDocs = await Promise.all(userPromises);
+    
+    const followersList = userDocs
+      .map(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            username: data.username,
+            displayName: data.displayName,
+            avatar: data.avatar || null
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    res.json(followersList);
+  } catch (error) {
+    res.status(500).json({ error: 'Takipçiler listesi alınamadı' });
+  }
+});
+
+
+// KULLANICI ADINA GÖRE ARAMA YAPAR
+app.get('/api/users/search', async (req, res) => {
+  try {
+    const { query } = req.query;
+
+    if (!query || typeof query !== 'string' || query.trim().length < 2) {
+      return res.json([]);
+    }
+    const searchQuery = query.trim().toLowerCase();
+    
+    const usersRef = db.collection('users');
+    const snapshot = await usersRef
+      .where('username', '>=', searchQuery)
+      .where('username', '<=', searchQuery + '\uf8ff')
+      .limit(10)
+      .get();
+      
+    if (snapshot.empty) {
+      return res.json([]);
+    }
+
+    const users = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      users.push({
+        id: doc.id,
+        username: data.username,
+        displayName: data.displayName,
+        avatar: data.avatar || null
+      });
+    });
+    
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: 'Kullanıcı araması sırasında bir hata oluştu' });
+  }
+});
+
 // Giriş yapmış kullanıcının bir profili takip edip etmediğini kontrol eden endpoint
 app.get('/api/users/:profileUserId/follow-status', decodeToken, async (req, res) => {
   try {
@@ -1486,6 +1607,90 @@ app.get('/api/profile/by-username/:username', async (req, res) => {
       error: 'Profil bilgileri alınırken hata oluştu',
       details: error.message 
     });
+  }
+});
+// Bir kullanıcının takip ETTİĞİ kişilerin listesini getirir  gemını ekledı
+app.get('/api/users/:userId/following', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    console.log(`🔍 Fetching FOLLOWING list for user: ${userId}`);
+
+    // 1. Adım: Kullanıcının 'following' dizisindeki ID'leri al
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+    }
+    const followingIds = userDoc.data().following || [];
+
+    // Eğer kimseyi takip etmiyorsa, boş dizi döndür
+    if (followingIds.length === 0) {
+      return res.json([]);
+    }
+
+    // 2. Adım: Bu ID'lere karşılık gelen kullanıcıların profil bilgilerini çek
+    const userPromises = followingIds.map(id => db.collection('users').doc(id).get());
+    const userDocs = await Promise.all(userPromises);
+    
+    const followingList = userDocs.map(doc => {
+      if (doc.exists) {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          username: data.username,
+          displayName: data.displayName,
+          avatar: data.avatar || null
+        };
+      }
+      return null; // Eğer bir sebepten kullanıcı bulunamazsa null döndür
+    }).filter(Boolean); // Null değerleri listeden temizle
+
+    res.json(followingList);
+
+  } catch (error) {
+    console.error(`Error fetching following list for ${req.params.userId}:`, error);
+    res.status(500).json({ error: 'Takip edilenler listesi alınamadı' });
+  }
+});
+
+// Bir kullanıcının TAKİPÇİLERİNİN listesini getirir
+app.get('/api/users/:userId/followers', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    console.log(`🔍 Fetching FOLLOWERS list for user: ${userId}`);
+
+    // 1. Adım: Kullanıcının 'followers' dizisindeki ID'leri al
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+    }
+    const followerIds = userDoc.data().followers || [];
+
+    if (followerIds.length === 0) {
+      return res.json([]);
+    }
+
+    // 2. Adım: Bu ID'lere karşılık gelen kullanıcıların profil bilgilerini çek
+    const userPromises = followerIds.map(id => db.collection('users').doc(id).get());
+    const userDocs = await Promise.all(userPromises);
+    
+    const followersList = userDocs.map(doc => {
+      if (doc.exists) {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          username: data.username,
+          displayName: data.displayName,
+          avatar: data.avatar || null
+        };
+      }
+      return null;
+    }).filter(Boolean);
+
+    res.json(followersList);
+
+  } catch (error) {
+    console.error(`Error fetching followers list for ${req.params.userId}:`, error);
+    res.status(500).json({ error: 'Takipçiler listesi alınamadı' });
   }
 });
 
