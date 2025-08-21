@@ -104,6 +104,156 @@ async function searchMovieOnTMDB(movieRecommendation) {
   }
 }
 
+  // GET /api/movies/search?query=...
+  // TMDB API'sini kullanarak film arar ve sonuçları döndürür.
+  app.get('/api/movies/search', decodeToken, async (req, res) => {
+    const { query } = req.query;
+
+    if (!query) {
+      return res.status(400).json({ error: 'Arama terimi zorunludur.' });
+    }
+
+    try {
+      const response = await axios.get(`${TMDB_BASE_URL}/search/movie`, {
+        params: {
+          api_key: TMDB_API_KEY,
+          query: query,
+          language: 'tr-TR',
+          include_adult: false,
+        }
+      });
+
+      res.status(200).json(response.data);
+
+    } catch (error) {
+      console.error('TMDB film arama hatası:', error.response ? error.response.data : error.message);
+      res.status(500).json({ error: 'Film araması sırasında bir hata oluştu.' });
+    }
+  });
+
+
+  // POST /api/oneriler
+  // Film önerisi ekler
+  app.post('/api/oneriler', decodeToken, async (req, res) => {
+    const { alanKullaniciId, filmId, filmAdi, filmPosterUrl, notMetni } = req.body;
+    try {
+      await db.collection('filmOnerileri').add({
+        alanKullaniciId,
+        filmId,
+        filmAdi,
+        filmPosterUrl,
+        posterPath: filmPosterUrl, // Frontend ile tam uyum için
+        notMetni,
+        gonderenKullaniciId: req.currentUserId,
+        durum: 'bekliyor',
+        olusturulmaTarihi: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: new Date()
+      });
+      res.status(201).json({ success: true });
+    } catch (error) {
+      console.error('Film önerisi eklenemedi:', error);
+      res.status(500).json({ error: 'Film önerisi eklenemedi.' });
+    }
+  });
+
+
+
+
+app.get('/api/users/:userId/film-onerileri', decodeToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Güvenlik: İstek atan kullanıcının, sadece kendi önerilerini isteyebileceğinden emin ol.
+    if (req.currentUserId !== userId) {
+      return res.status(403).json({ error: 'Bu bilgilere erişim yetkiniz yok.' });
+    }
+    const onerilerRef = db.collection('filmOnerileri');
+    const snapshot = await onerilerRef
+      .where('alanKullaniciId', '==', userId)
+      .where('durum', '==', 'bekliyor')
+      .orderBy('olusturulmaTarihi', 'desc') // En yeni öneriler en üstte
+      .get();
+    if (snapshot.empty) {
+      return res.status(200).json([]);
+    }
+    const oneriler = snapshot.docs.map(doc => ({
+      id: doc.id, // Firestore döküman ID'sini de ekliyoruz, bu önemli!
+      ...doc.data()
+    }));
+
+    // Sonucu JSON olarak React uygulamasına gönder.
+    res.status(200).json(oneriler);
+  } catch (error) {
+    console.error('Film önerileri alınırken bir hata oluştu:', error);
+    res.status(500).json({ error: 'Sunucu hatası. Film önerileri alınamadı.' });
+  }
+});
+
+
+app.post('/api/oneriler/:oneriId/listeye-ekle', decodeToken, async (req, res) => {
+  try {
+    const { oneriId } = req.params;
+    const { filmId, filmAdi, filmPosterUrl } = req.body; // React'ten bu bilgileri alacağız
+    const userId = req.currentUserId;
+
+    // 1. Filmi kullanıcının 'izlemeListesi' koleksiyonuna ekle
+    const izlemeListesiRef = db.collection('users').doc(userId).collection('izlemeListesi');
+    await izlemeListesiRef.doc(String(filmId)).set({
+      filmId: filmId,
+      filmAdi: filmAdi,
+      filmPosterUrl: filmPosterUrl,
+      eklenmeTarihi: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // 2. Başarılı ekleme sonrası, önerinin durumunu 'listeye_eklendi' olarak güncelle
+    const oneriRef = db.collection('filmOnerileri').doc(oneriId);
+    await oneriRef.update({ durum: 'listeye_eklendi' });
+
+    res.status(200).json({ message: 'Film izleme listesine başarıyla eklendi.' });
+  } catch (error) {
+    console.error('Film izleme listesine eklenirken hata:', error);
+    res.status(500).json({ error: 'Sunucu hatası. Film eklenemedi.' });
+  }
+});
+
+
+// POST /api/oneriler/:oneriId/reddet
+// Bir film önerisini reddeder (durumunu 'reddedildi' olarak günceller).
+app.post('/api/oneriler/:oneriId/reddet', decodeToken, async (req, res) => {
+  try {
+    const { oneriId } = req.params;
+    
+    // Önerinin durumunu güncelle
+    const oneriRef = db.collection('filmOnerileri').doc(oneriId);
+    await oneriRef.update({ durum: 'reddedildi' });
+    
+    res.status(200).json({ message: 'Öneri başarıyla reddedildi.' });
+  } catch (error) {
+    console.error('Öneri reddedilirken hata:', error);
+    res.status(500).json({ error: 'Sunucu hatası. Öneri reddedilemedi.' });
+  }
+});
+
+
+// POST /api/oneriler/:oneriId/tesekkur-et
+// Bir öneri için teşekkür eder (şimdilik sadece durumunu 'okundu' yapar).
+// Daha sonra buraya bir bildirim sistemi eklenebilir.
+app.post('/api/oneriler/:oneriId/tesekkur-et', decodeToken, async (req, res) => {
+  try {
+    const { oneriId } = req.params;
+
+    // Önerinin durumunu 'okundu' olarak güncelle
+    const oneriRef = db.collection('filmOnerileri').doc(oneriId);
+    await oneriRef.update({ durum: 'okundu' });
+
+    res.status(200).json({ message: 'Teşekkür edildi.' });
+  } catch (error) {
+    console.error('Teşekkür edilirken hata:', error);
+    res.status(500).json({ error: 'Sunucu hatası.' });
+  }
+});
+
+
 // Main recommendation endpoint
 app.post('/api/get-recommendations', async (req, res) => {
   try {
@@ -1053,29 +1203,43 @@ app.get('/api/person/:personId', async (req, res) => {
 });
 
 // Kullanıcı profil endpoint'i
+// Gerçek kullanıcı profili Firestore'dan username ile getirilir
 app.get('/api/profile/:username', async (req, res) => {
   try {
     const { username } = req.params;
-    
-    // Simulated user data - gerçek uygulamada Firebase'den gelecek
+    if (!username || typeof username !== 'string') {
+      return res.status(400).json({ success: false, error: 'Kullanıcı adı gerekli' });
+    }
+    // Firestore'da usernames koleksiyonundan UID'yi bul
+    const normalizedUsername = username.trim().toLowerCase();
+    const usernameDoc = await db.collection('usernames').doc(normalizedUsername).get();
+    if (!usernameDoc.exists) {
+      return res.status(404).json({ success: false, error: 'Kullanıcı bulunamadı' });
+    }
+  const uid = usernameDoc.data().userId;
+    // UID ile gerçek kullanıcı dokümanını çek
+    const userDoc = await db.collection('users').doc(uid).get();
+    if (!userDoc.exists) {
+      return res.status(404).json({ success: false, error: 'Kullanıcı bulunamadı' });
+    }
+    const userData = userDoc.data();
+    // Takipçi ve takip edilen sayıları
+    const followers = userData.followers || [];
+    const following = userData.following || [];
+    // Profil objesi
     const userProfile = {
-      id: 'user123',
-      username: username,
-      displayName: username.charAt(0).toUpperCase() + username.slice(1),
-      email: `${username}@example.com`,
-      avatar: `https://ui-avatars.com/api/?name=${username}&background=6366f1&color=fff&size=100`,
-      joinDate: '2024-01-15',
-      bio: 'Film tutkunu ve sinema eleştirmeni',
-      stats: {
-        watchedMovies: Math.floor(Math.random() * 200) + 50,
-        watchlistMovies: Math.floor(Math.random() * 50) + 10,
-        favoriteGenres: ['Aksiyon', 'Bilim Kurgu', 'Dram'],
-        totalWatchTime: Math.floor(Math.random() * 500) + 100
-      },
-      recentMovies: []
+      id: uid,
+      username: userData.username,
+      displayName: userData.displayName || userData.username,
+      avatar: userData.avatar || `https://ui-avatars.com/api/?name=${userData.username}&background=6366f1&color=fff&size=100`,
+      createdAt: userData.createdAt || null,
+      updatedAt: userData.updatedAt || null,
+      followers,
+      following,
+      followersCount: followers.length,
+      followingCount: following.length
     };
-
-    res.json(userProfile);
+    res.json({ success: true, profile: userProfile });
   } catch (error) {
     console.error('❌ Profile fetch error:', error);
     res.status(500).json({ 

@@ -8,9 +8,11 @@ import Navbar from '../components/Navbar';
 import BackButton from '../components/BackButton';
 import SettingsModal from '../components/SettingsModal';
 import { api } from '../services/api';
+import FilmOneriListesi from '../components/FilmOneriListesi';
+import OneriDetayModal from '../components/OneriDetayModal';
 
 const HesabimPage: React.FC = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigate();   
   const [isSearching, setIsSearching] = useState(false); // Arama modu aktif mi?
   const [searchQuery, setSearchQuery] = useState('');   // Arama çubuğuna yazılan metin
   const [searchResults, setSearchResults] = useState<User[]>([]); // Arama sonuçları
@@ -48,7 +50,11 @@ const HesabimPage: React.FC = () => {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState('');
 
-  // User type tanımı
+  
+
+
+
+
   interface User {
     uid: string;
     displayName: string;
@@ -56,11 +62,67 @@ const HesabimPage: React.FC = () => {
     avatar?: string;
   }
 
+
+  interface FilmOneri {
+    id: string; // Firebase'den gelen döküman ID'si
+    gonderenKullaniciAdi: string;
+    gonderenKullaniciAvatar?: string;
+    filmId: string;
+    filmAdi: string;
+    filmPosterUrl?: string; // Detay panelinde göstereceğiz
+    notMetni?: string;
+    durum: 'bekliyor' | 'okundu' | 'reddedildi';
+    olusturulmaTarihi: any; // Firebase timestamp'i için 'any' veya daha spesifik bir tip
+  }
+  const [filmOnerileri, setFilmOnerileri] = useState<FilmOneri[]>([]);
+  const [onerilerLoading, setOnerilerLoading] = useState(false);
+  const [seciliOneri, setSeciliOneri] = useState<FilmOneri | null>(null);
+
   // Takipçiler ve takip edilenler state'leri
   const [followers, setFollowers] = useState<User[]>([]);
   const [following, setFollowing] = useState<User[]>([]);
   const [followersLoading, setFollowersLoading] = useState(false);
   const [followingLoading, setFollowingLoading] = useState(false);
+
+
+  const handleIzlemeListesineEkle = async (oneri: FilmOneri) => {
+    try {
+        await api.post(`/api/oneriler/${oneri.id}/listeye-ekle`, { 
+            filmId: oneri.filmId,
+            filmAdi: oneri.filmAdi,
+            filmPosterUrl: oneri.filmPosterUrl 
+        });
+        setFilmOnerileri(prev => prev.filter(o => o.id !== oneri.id));
+        setSeciliOneri(null);
+        alert(`${oneri.filmAdi} izleme listene eklendi!`);
+    } catch (error) {
+        console.error("Film izleme listesine eklenemedi:", error);
+        alert("Hata: Film listeye eklenemedi.");
+    }
+};
+const handleReddet = async (oneri: FilmOneri) => {
+  try {
+        await api.post(`/api/oneriler/${oneri.id}/reddet`);
+        setFilmOnerileri(prev => prev.filter(o => o.id !== oneri.id));
+        setSeciliOneri(null);
+    } catch (error) {
+        console.error("Öneri reddedilemedi:", error);
+        alert("Hata: Öneri reddedilemedi.");
+    }
+};
+
+const handleTesekkurEt = async (oneri: FilmOneri) => {
+    try {
+        await api.post(`/api/oneriler/${oneri.id}/tesekkur-et`);
+        setFilmOnerileri(prev => prev.filter(o => o.id !== oneri.id));
+        setSeciliOneri(null);
+    } catch (error) {
+        console.error("Teşekkür edilemedi:", error);
+        alert("Hata: Teşekkür edilemedi.");
+    }
+};
+
+  
 
 
   // 1. useEffect: Takipçi ve Takip Edilen Verilerini Çeker
@@ -108,6 +170,25 @@ const HesabimPage: React.FC = () => {
   }, [searchQuery, isSearching]);
 
   // === DÜZELTİLMİŞ BÖLÜM SONU ===
+    // === YENİ useEffect - Film Önerilerini Çeker ===
+  useEffect(() => {
+    if (!currentUser) return; // Kullanıcı girişi yoksa bir şey yapma
+
+    const fetchFilmOnerileri = async () => {
+      setOnerilerLoading(true); // Yükleniyor durumunu başlat
+      try {
+        // API'den mevcut kullanıcının 'uid'si ile ilgili önerileri istiyoruz
+        const response = await api.get<FilmOneri[]>(`/users/${currentUser.uid}/film-onerileri`);
+        setFilmOnerileri(response.data); // Gelen veriyi state'e ata
+      } catch (error) {
+        console.error("Film önerileri alınamadı:", error);
+      } finally {
+        setOnerilerLoading(false); // Yükleniyor durumunu bitir
+      }
+    };
+
+    fetchFilmOnerileri();
+  }, [currentUser]); // currentUser değiştiğinde bu fonksiyon yeniden çalışır
 
   const handleUpdateUsername = async () => {
     if (!newUsername.trim()) {
@@ -353,8 +434,8 @@ useEffect(() => {
         {/* Ana Panel - Tek Büyük Konteyner */}
         <div className="card-bg rounded-xl p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
           
-          {/* Sol Sütun: Profil Bilgileri - Büyütüldü */}
-          <div className="lg:col-span-2">
+          {/* Sol Sütun: Profil Bilgileri */}
+          <div className="lg:col-span-1">
             <div className="text-center lg:text-left mb-6">
               <h2 className="text-3xl font-bold text-primary mb-6">Profil Bilgileri</h2>
               
@@ -461,6 +542,15 @@ useEffect(() => {
                 </div>
               </div>
             </div>
+          </div>
+          
+          {/* Orta Sütun: Film Öneri Listesi */}
+          <div className="lg:col-span-1">
+            <FilmOneriListesi
+              oneriler={filmOnerileri}
+              loading={onerilerLoading}
+              onOneriClick={(oneri: FilmOneri) => setSeciliOneri(oneri)}
+            />
           </div>
 
           {/* Sağ Sütun: Takipçiler ve Takip Edilenler */}
@@ -999,6 +1089,15 @@ useEffect(() => {
         isOpen={showSettingsModal} 
         onClose={() => setShowSettingsModal(false)} 
       />
+      {seciliOneri && (
+        <OneriDetayModal
+          oneri={seciliOneri}
+          onClose={() => setSeciliOneri(null)}
+          onReddet={handleReddet}
+          onTesekkurEt={handleTesekkurEt}
+          onListeyeEkle={handleIzlemeListesineEkle}
+        />
+      )}
     </div>
   );
 };

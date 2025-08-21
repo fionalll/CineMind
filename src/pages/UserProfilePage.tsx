@@ -7,6 +7,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { movieService } from '../services/api';
 import { COLOR_AVATARS, ANIMAL_AVATARS } from '../config/avatars';
 import type { Movie } from '../types';
+import FilmFirlatModal from '../components/FilmFirlatModal';
 
 interface ProfileData {
   id: string;
@@ -25,7 +26,7 @@ interface ProfileData {
   recentMovies: Movie[];
 }
 
-  const UserProfilePage: React.FC = () => {
+const UserProfilePage: React.FC = () => {
   const { username } = useParams<{ username: string }>();
   const { currentUser, avatar } = useAuth();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
@@ -42,12 +43,16 @@ interface ProfileData {
   const [showBio, setShowBio] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showFirlatModal, setShowFirlatModal] = useState(false);
   
   // Takip sistemi state'leri
   const [isFollowing, setIsFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
+
+  // Film önerileri state'i
+  const [filmOnerileri, setFilmOnerileri] = useState<any[]>([]);
 
   // Kendi profili mi kontrolü
   const isOwnProfile = currentUser?.displayName === username || 
@@ -340,7 +345,19 @@ interface ProfileData {
       }
     };
 
+    const fetchFilmOnerileri = async () => {
+      if (!profileData?.id) return;
+      try {
+        const response = await movieService.getUserFilmOnerileri(profileData.id);
+        setFilmOnerileri(response || []);
+      } catch (error) {
+        console.error('Film önerileri alınamadı:', error);
+        setFilmOnerileri([]);
+      }
+    };
+
     fetchProfileData();
+    fetchFilmOnerileri();
   }, [username, isOwnProfile, currentUser, avatar]);
 
   if (loading) {
@@ -484,49 +501,56 @@ interface ProfileData {
                     </div>
                     
                     {/* Takipçi/Takip Edilen Sayıları ve Takip Butonu */}
-                    <div className="flex items-center gap-4 mb-4">
-                      {/* Takipçi/Takip Sayıları */}
-                      <div className="flex gap-4 text-sm">
-                        <div className="text-center">
-                          <span className="font-bold text-primary">{followerCount}</span>
-                          <span className="text-secondary ml-1">Takipçi</span>
-                        </div>
-                        <div className="text-center">
-                          <span className="font-bold text-primary">{followingCount}</span>
-                          <span className="text-secondary ml-1">Takip</span>
-                        </div>
-                      </div>
-                      
-                      {/* Kendi profili için yenileme butonu */}
-                      {isOwnProfile && (
-                        <button
-                          onClick={refreshFollowStats}
-                          className="text-xs px-2 py-1 bg-secondary hover:bg-tertiary rounded transition-colors"
-                          title="Takip bilgilerini yenile"
-                        >
-                          🔄
-                        </button>
-                      )}
-                      
-                      {/* Takip Butonu - Sadece başka kullanıcıların profilinde göster */}
-                      {!isOwnProfile && (
-                        <button
-                          onClick={handleFollowToggle}
-                          disabled={isFollowLoading}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                            isFollowing 
-                              ? 'border border-default text-primary hover:bg-secondary' 
-                              : 'hover:opacity-80'
-                          } ${isFollowLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          style={{
-                            backgroundColor: !isFollowing ? 'var(--accent)' : undefined,
-                            color: !isFollowing ? 'var(--background-primary)' : undefined,
-                          }}
-                        >
-                          {isFollowLoading ? '...' : isFollowing ? 'Takipten Çık' : 'Takip Et'}
-                        </button>
-                      )}
+                <div className="flex items-center gap-4 mb-4">
+                  {/* Takipçi/Takip Sayıları */}
+                  <div className="flex gap-4 text-sm">
+                    <div className="text-center">
+                      <span className="font-bold text-primary">{followerCount}</span>
+                      <span className="text-secondary ml-1">Takipçi</span>
                     </div>
+                    <div className="text-center">
+                      <span className="font-bold text-primary">{followingCount}</span>
+                      <span className="text-secondary ml-1">Takip</span>
+                    </div>
+                  </div>
+                  {/* Kendi profili için yenileme butonu */}
+                  {isOwnProfile && (
+                    <button
+                      onClick={refreshFollowStats}
+                      className="text-xs px-2 py-1 bg-secondary hover:bg-tertiary rounded transition-colors"
+                      title="Takip bilgilerini yenile"
+                    >
+                      🔄
+                    </button>
+                  )}
+                  {/* Takip Butonu - Sadece başka kullanıcıların profilinde göster */}
+                  {!isOwnProfile && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleFollowToggle}
+                        disabled={isFollowLoading}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          isFollowing 
+                            ? 'border border-default text-primary hover:bg-secondary' 
+                            : 'hover:opacity-80'
+                        } ${isFollowLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        style={{
+                          backgroundColor: !isFollowing ? 'var(--accent)' : undefined,
+                          color: !isFollowing ? 'var(--background-primary)' : undefined,
+                        }}
+                      >
+                        {isFollowLoading ? '...' : isFollowing ? 'Takipten Çık' : 'Takip Et'}
+                      </button>
+                      <button
+                        onClick={() => setShowFirlatModal(true)}
+                        className="px-4 py-2 rounded-lg text-sm font-medium bg-secondary hover:bg-tertiary text-primary transition-all duration-200"
+                        title={`${profileData?.displayName} adlı kullanıcıya film fırlat`}
+                      >
+                        🚀 Fırlat
+                      </button>
+                    </div>
+                  )}
+                </div>
                     
                     {/* Düzenlenebilir Hakkımda Kısmı */}
                     {showBio && (
@@ -754,28 +778,63 @@ interface ProfileData {
                           ✏️ Film ekleyin
                         </p>
                       </div>
-                    ) : recommendedMovie ? (
-                      <div className="w-32 h-48 relative">
-                        {recommendedMovie.posterPath ? (
-                          <img
-                            src={`https://image.tmdb.org/t/p/w300${recommendedMovie.posterPath}`}
-                            alt={recommendedMovie.title}
-                            className="w-full h-full object-cover rounded-lg"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-tertiary rounded-lg flex items-center justify-center">
-                            <span className="text-secondary text-xs text-center p-1">
-                              {recommendedMovie.title}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    ) : null}
-                  </div>
+                  ) : recommendedMovie ? (
+                    <div className="w-32 h-48 relative">
+                      {recommendedMovie.posterPath ? (
+                        <img
+                          src={`https://image.tmdb.org/t/p/w300${recommendedMovie.posterPath}`}
+                          alt={recommendedMovie.title}
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-tertiary rounded-lg flex items-center justify-center">
+                          <span className="text-secondary text-xs text-center p-1">
+                            {recommendedMovie.title}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+                  {showFirlatModal && (
+                    <FilmFirlatModal
+                      kimeGonderiliyor={profileData!}
+                      onClose={() => setShowFirlatModal(false)}
+                    />
                   )}
+                </div>
+                )}
                 </div>
               </div>
             </div>
+
+            {/* Avatar ve film önerileri bölümü */}
+            {!isOwnProfile && (
+              <div className="mb-8">
+                <h2 className="text-xl font-semibold mb-2">Bu kullanıcıya gelen film önerileri</h2>
+                {filmOnerileri.length === 0 ? (
+                  <p className="text-lg text-secondary">Bu kullanıcıya henüz film önerisi gelmemiş.</p>
+                ) : (
+                  <ul className="space-y-4">
+                    {filmOnerileri.map(oneri => (
+                      <li key={oneri.id} className="p-4 bg-background-tertiary rounded shadow">
+                        <div className="flex items-center gap-4">
+                          {oneri.filmPosterUrl ? (
+                            <img src={oneri.filmPosterUrl} alt={oneri.filmAdi} className="w-16 h-24 object-cover rounded" />
+                          ) : (
+                            <div className="w-16 h-24 bg-gray-300 flex items-center justify-center rounded text-xs">Poster Yok</div>
+                          )}
+                          <div>
+                            <div className="font-bold text-lg">{oneri.filmAdi}</div>
+                            <div className="text-sm text-secondary">Not: {oneri.notMetni || 'Yorum yok'}</div>
+                            <div className="text-xs text-gray-500">Durum: {oneri.durum}</div>
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
 
             {/* İstatistikler */}
             <div className="py-6">

@@ -9,30 +9,30 @@ export const api = axios.create({
   timeout: 30000, // 30 seconds
 });
 
-// Auth token'ı almak için yardımcı fonksiyon
-const getAuthToken = async (): Promise<string | null> => {
-  const currentUser = auth.currentUser;
-  if (!currentUser) {
-    throw new Error('Kullanıcı girişi yapılmamış');
-  }
-  return await currentUser.getIdToken();
-};
 
-// Auth header'ı ile request interceptor
-api.interceptors.request.use(async (config) => {
-  // Eğer auth gerektiren endpoint ise token ekle
-  if (config.url?.includes('/users/') && config.method === 'post') {
-    try {
-      const token = await getAuthToken();
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-    } catch (error) {
-      console.warn('Auth token alınamadı:', error);
+// Axios request interceptor'ı ekle
+// Bu interceptor, 'api' servisiyle yapılan HER istek gönderilmeden önce çalışır.
+api.interceptors.request.use(
+  async (config) => {
+    const currentUser = auth.currentUser;
+
+    if (currentUser) {
+      // Eğer kullanıcı giriş yapmışsa, o anki geçerli Firebase ID token'ını al
+      const token = await currentUser.getIdToken();
+      
+      // Token'ı, 'Authorization' başlığına 'Bearer' şemasıyla ekle.
+      // Backend'deki 'decodeToken' middleware'i bu başlığı arıyor.
+      config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Güncellenmiş yapılandırma ile isteğin devam etmesine izin ver
+    return config;
+  },
+  (error) => {
+    // İstek yapılandırmasında bir hata olursa, bu hatayı reddet
+    return Promise.reject(error);
   }
-  return config;
-});
+);
 
 export const movieService = {
   async getRecommendations(message: string, excludedTitles?: string[]): Promise<RecommendationResponse> {
@@ -335,7 +335,7 @@ export const movieService = {
     }
   }> {
     try {
-      const response = await api.get(`/profile/by-username/${username}`);
+  const response = await api.get(`/profile/${username}`);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -413,5 +413,10 @@ export const movieService = {
       }
       throw new Error('Beklenmeyen bir hata oluştu');
     }
+  },
+
+  async getUserFilmOnerileri(userId: string): Promise<any[]> {
+    const response = await api.get(`/users/${userId}/film-onerileri`);
+    return response.data;
   }
 };
