@@ -82,7 +82,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                 {COLOR_AVATARS.map((colorAvatar) => (
                   <button
                     key={colorAvatar.id}
-                    onClick={() => updateAvatar(colorAvatar.id)}
+                    onClick={async () => {
+                      try {
+                        await updateAvatar(colorAvatar.id);
+                      } catch (error) {
+                        console.error("Avatar seçimi hatası:", error);
+                      }
+                    }}
                     className={`relative w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg transition-all duration-200 hover:scale-110 ${
                       avatar === colorAvatar.id
                         ? 'ring-4 ring-accent ring-offset-2 ring-offset-primary'
@@ -109,7 +115,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                 {ANIMAL_AVATARS.map((animalAvatar) => (
                   <button
                     key={animalAvatar.id}
-                    onClick={() => updateAvatar(animalAvatar.id)}
+                    onClick={async () => {
+                      try {
+                        await updateAvatar(animalAvatar.id);
+                      } catch (error) {
+                        console.error("Avatar seçimi hatası:", error);
+                        // Kullanıcıya görsel geri bildirim
+                      }
+                    }}
                     className={`relative w-12 h-12 rounded-full overflow-hidden transition-all duration-200 hover:scale-110 ${
                       avatar === animalAvatar.id
                         ? 'ring-4 ring-accent ring-offset-2 ring-offset-primary'

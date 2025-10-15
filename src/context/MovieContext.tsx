@@ -32,7 +32,7 @@ export const MovieProvider: React.FC<MovieProviderProps> = ({ children }) => {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
       id: '1',
-      content: 'Merhaba! Ben CineMind AI. Size benzersiz film önerileri sunmak için buradayım. Hangi film türünde veya tarzında öneriler istiyorsunuz?',
+      content: 'Merhaba! Ben CinePop AI. Size benzersiz film önerileri sunmak için buradayım. Hangi film türünde veya tarzında öneriler istiyorsunuz?',
       isUser: false,
       timestamp: new Date(),
     },

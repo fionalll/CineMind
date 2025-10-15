@@ -22,24 +22,45 @@ const ChatBot: React.FC = () => {
       isUser: true,
       timestamp: new Date(),
     };
-
+    const updatedMessages = [...chatMessages, userMessage];
     addMessage(userMessage);
     setInputMessage('');
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await movieService.getRecommendations(inputMessage);
+      const response = await movieService.getRecommendations(inputMessage, updatedMessages);
       
-      const aiMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        content: response.message,
-        isUser: false,
-        timestamp: new Date(),
-      };
+      if (response.status === 'clarification' && response.question) {
+        
+        const aiQuestionMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          content: response.question, // Mesaj içeriği olarak SORUYU kullan
+          isUser: false,
+          timestamp: new Date(),
+        };
+        addMessage(aiQuestionMessage); // Chat'e soruyu ekle
+        setMovies([]); // Film listesini temizle, çünkü henüz film yok
 
-      addMessage(aiMessage);
-      setMovies(response.movies);
+      } 
+      // 2. Yanıt bir FİLM LİSTESİ mi?
+      else if (response.movies) {
+
+        const aiSummaryMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          // response.message'in undefined olabileceğini kontrol et
+          content: response.message || "İşte sana özel önerilerim:", 
+          isUser: false,
+          timestamp: new Date(),
+        };
+        addMessage(aiSummaryMessage); // Chat'e özet mesajını ekle
+        setMovies(response.movies); // Film listesini güncelle
+
+      } 
+      // 3. Hiçbiri değilse, bu beklenmedik bir formattır. Hata olarak ele al.
+      else {
+        throw new Error("Yapay zekadan beklenmeyen bir formatta yanıt alındı.");
+      }
     } catch (err) {
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -69,7 +90,7 @@ const ChatBot: React.FC = () => {
           <span className="text-white font-bold">🤖</span>
         </div>
         <div>
-          <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>CineMind AI</h2>
+          <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>CinePop AI</h2>
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Film Küratörünüz</p>
         </div>
       </div>

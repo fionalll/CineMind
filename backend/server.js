@@ -1,3 +1,4 @@
+
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -51,6 +52,8 @@ const decodeToken = async (req, res, next) => {
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// Set API version to v1beta for newer models
+const API_VERSION = 'v1beta';
 
 // TMDB API configuration
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
@@ -137,7 +140,11 @@ async function searchMovieOnTMDB(movieRecommendation) {
   app.post('/api/oneriler', decodeToken, async (req, res) => {
     const { alanKullaniciId, filmId, filmAdi, filmPosterUrl, notMetni } = req.body;
     try {
-      await db.collection('filmOnerileri').add({
+      // Get sender's display name from Firebase Auth
+      const userRecord = await admin.auth().getUser(req.currentUserId);
+      const gonderenKullaniciAdi = userRecord.displayName || userRecord.email || 'Kullanıcı';
+      // Film önerisini oluştur
+      const yeniOneriRef = await db.collection('filmOnerileri').add({
         alanKullaniciId,
         filmId,
         filmAdi,
@@ -145,16 +152,145 @@ async function searchMovieOnTMDB(movieRecommendation) {
         posterPath: filmPosterUrl, // Frontend ile tam uyum için
         notMetni,
         gonderenKullaniciId: req.currentUserId,
+        gonderenKullaniciAdi,
         durum: 'bekliyor',
         olusturulmaTarihi: admin.firestore.FieldValue.serverTimestamp(),
         createdAt: new Date()
       });
+
+      // Film fırlatıldığında alıcıya bildirim gönder
+      await db.collection('notifications').add({
+        userId: alanKullaniciId,
+        type: 'yeni_oneri',
+        message: `${gonderenKullaniciAdi} sana yeni bir film fırlattı!`,
+        isRead: false,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        relatedOneriId: yeniOneriRef.id
+      });
+
       res.status(201).json({ success: true });
     } catch (error) {
       console.error('Film önerisi eklenemedi:', error);
       res.status(500).json({ error: 'Film önerisi eklenemedi.' });
     }
   });
+
+
+// POST /api/oneriler/:oneriId/yanitla
+// Bir film önerisine geri yanıt ekler (Geliştirilmiş versiyon).
+app.post('/api/oneriler/:oneriId/yanitla', decodeToken, async (req, res) => {
+  try {
+    const { oneriId } = req.params;
+    const { yanitMetni } = req.body;
+    
+    // Gelen verilerin eksiksiz olduğunu kontrol et
+    if (!oneriId || !yanitMetni) {
+      return res.status(400).json({ error: 'Öneri ID\'si ve yanıt metni zorunludur.' });
+    }
+
+    // İlgili öneri dökümanının referansını al
+    const oneriRef = db.collection('filmOnerileri').doc(oneriId);
+    
+    // Dökümanın veritabanında var olup olmadığını kontrol et
+    const doc = await oneriRef.get();
+    if (!doc.exists) {
+      console.error(`HATA: Yanıtlanacak öneri bulunamadı. ID: ${oneriId}`);
+      return res.status(404).json({ error: 'Güncellenecek öneri bulunamadı.' });
+    }
+
+    // Dökümanı 'geriYanit' ve 'durum' alanlarıyla güncelle
+    await oneriRef.update({
+      geriYanit: yanitMetni,
+      durum: 'yanitlandi'
+    });
+
+    // Yanıt verildiğinde orijinal göndericiye bildirim gönder
+    const oneriData = (await oneriRef.get()).data();
+    const gonderenKullaniciId = oneriData.gonderenKullaniciId;
+    const yanitlayanKullaniciId = req.currentUserId;
+    const yanitlayanKullaniciRef = await db.collection('users').doc(yanitlayanKullaniciId).get();
+    const yanitlayanKullaniciData = yanitlayanKullaniciRef.data();
+
+    await db.collection('notifications').add({
+      userId: gonderenKullaniciId,
+      type: 'yeni_yanit',
+      message: `${yanitlayanKullaniciData.displayName} sana yeni bir mesaj gönderdi!`,
+      isRead: false,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      relatedOneriId: oneriId
+    });
+
+    // Başarı durumunu konsola logla
+    console.log(`✅ Öneri ${oneriId} başarıyla yanıtlandı. Yanıt: "${yanitMetni}"`);
+    
+    res.status(200).json({ message: 'Yanıt başarıyla gönderildi.' });
+    
+
+  } catch (error) {
+    // Hata durumunu detaylı bir şekilde konsola logla
+    console.error(`HATA: Öneri ${req.params.oneriId} yanıtlanırken bir sorun oluştu:`, error);
+    
+    res.status(500).json({ error: 'Sunucu hatası. Yanıt gönderilemedi.' });
+  }
+});
+
+
+
+
+app.get('/api/users/:userId/gelen-yanitlar', decodeToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    if (req.currentUserId !== userId) {
+      return res.status(403).json({ error: 'Bu bilgilere erişim yetkiniz yok.' });
+    }
+
+    const onerilerRef = db.collection('filmOnerileri');
+    const snapshot = await onerilerRef
+      .where('gonderenKullaniciId', '==', userId)
+      .where('durum', '==', 'yanitlandi')
+      .orderBy('olusturulmaTarihi', 'desc')
+      .get();
+
+    if (snapshot.empty) {
+      return res.status(200).json([]);
+    }
+
+    // Yanıtları ve yanıtı yazan kullanıcıların bilgilerini birleştir
+    const yanitlarPromise = snapshot.docs.map(async (doc) => {
+      const oneriData = doc.data();
+      const alanKullaniciRef = db.collection('users').doc(oneriData.alanKullaniciId);
+      const alanKullaniciDoc = await alanKullaniciRef.get();
+
+      let alanKullaniciData = { displayName: 'Bilinmeyen Kullanıcı', avatar: null };
+      if (alanKullaniciDoc.exists) {
+        alanKullaniciData = {
+          displayName: alanKullaniciDoc.data().displayName,
+          avatar: alanKullaniciDoc.data().avatar
+        };
+      }
+
+      // DEBUG: Kullanıcı avatarı ve displayName logu
+      console.log('[YANIT KULLANICI]', {
+        alanKullaniciId: oneriData.alanKullaniciId,
+        displayName: alanKullaniciData.displayName,
+        avatar: alanKullaniciData.avatar
+      });
+
+      return {
+        id: doc.id,
+        ...oneriData,
+        alanKullanici: alanKullaniciData // Yanıtı yazan kullanıcının bilgilerini ekle
+      };
+    });
+
+    const yanitlar = await Promise.all(yanitlarPromise);
+    res.status(200).json(yanitlar);
+
+  } catch (error) {
+    console.error('Gelen yanıtlar alınırken hata:', error);
+    res.status(500).json({ error: 'Sunucu hatası.' });
+  }
+});
 
 
 
@@ -257,126 +393,224 @@ app.post('/api/oneriler/:oneriId/tesekkur-et', decodeToken, async (req, res) => 
 // Main recommendation endpoint
 app.post('/api/get-recommendations', async (req, res) => {
   try {
-    // Güvenli destructuring ile default değerler ata
-    const { message, excludedTitles = [] } = req.body;
+    // YENİ: req.body'den 'excludedTitles' yerine 'history' alıyoruz.
+    // Varsayılan olarak boş bir dizi atamak, olası hataları engeller.
+    const { message, history = [] } = req.body;
 
+    // YENİ: Gelen verinin doğruluğunu kontrol etmek için hata ayıklama logları.
+    console.log("--- YENİ İSTEK GELDİ ---");
+    console.log("SON MESAJ:", message);
+    console.log("TÜM GEÇMİŞ:", JSON.stringify(history, null, 2));
     // İstekte mesaj yoksa hata döndür
     if (!message) {
       return res.status(400).json({ error: 'Mesaj gerekli' });
     }
+    const formattedHistory = history
+      .map(msg => {
+        const prefix = msg.isUser ? "Kullanıcı:" : "AI:";
+        return `${prefix} ${msg.content || ''}`;
+      })
+      .join("\n");
 
-    // excludedTitles'ın güvenli kontrolü ve prompt oluşturma
-    const excludedMoviesText = excludedTitles.length > 0 
-      ? `\n\nÖNEMLİ NOT: Lütfen aşağıdaki filmleri KESİNLİKLE önerme, çünkü bunlar daha önce önerildi: ${excludedTitles.join(', ')}.`
-      : '';
 
-    // Create enhanced CineMind prompt with intelligent mode detection
+    // Create enhanced CinePop prompt with intelligent mode detection
     const prompt = `
-### KİMLİK ve ROL ###
-Sen, "CineMind" adında, dünyanın en bilgili ve sezgisel film uzmanı ve öneri sistemisin. İki ana yeteneğin var: spesifik bir filmi tahmin etmek ve film listeleri önermek.
+### KİMLİK VE GÖREV ###
+Sen, "CinePop" adında, sohbetin geçmişini hatırlayan ve diyalog kurarak en iyi film önerilerini sunan bir yapay zeka film uzmanısın. Klişelerden kaçınır, beklenmedik bağlantılar kurar ve her önerini bir sanat küratörü titizliğiyle yaparsın.
 
-### ANA GÖREV ###
-Kullanıcının isteğini dikkatlice analiz et ve **niyetini anla.**
-1.  Eğer kullanıcı, ipuçları vererek spesifik bir filmi bulmaya çalışıyorsa ("hani bir film vardı...", "bir adam...", "sonunda şöyle oluyordu..."), **"Tek Tahmin Modu"**'na geç.
-2.  Eğer kullanıcı, bir tür, tema, yönetmen veya benzerlik belirterek genel bir film tavsiyesi istiyorsa ("bana ... gibi filmler öner", "bu akşam ne izlesem?"), **"Liste Önerme Modu"**'na geç.
+### TEMEL PRENSİPLER ###
 
+1.  **Hafıza ve Bağlam (EN ÖNEMLİ PRENSİP):** Senin birincil görevin, sana verilen "ÖNCEKİ KONUŞMA GEÇMİŞİ"ni bir bütün olarak anlamaktır. Kullanıcının yeni isteğini, bu geçmişin bir devamı olarak değerlendir.
+    *   **Örnek:** Eğer kullanıcı daha önce "karanlık film" demişse ve yeni mesajında "yalnızlık teması" diyorsa, artık senin görevin "hem karanlık hem de yalnızlık temasını işleyen" filmleri düşünmektir.
+    *   **Kural:** Kullanıcının daha önce cevapladığı bir soruyu veya verdiği bir bilgiyi ASLA unutma ve aynı soruyu tekrar sorma.
+
+2.  **Bütüncül Analiz:** Hafızadan gelen bilgilerle kullanıcının yeni isteğindeki TÜM ipuçlarını bir bütün olarak ele al. Bir kritere diğerinden daha fazla ağırlık verme. Amacın, tüm şartları sağlayan filmleri bulmaktır.
+
+3.  **Geniş Kapsam:** Kullanıcı açıkça "sadece sinema filmi" belirtmediği sürece, "film" kelimesini geniş anlamda yorumla. Önerilerin; sinema filmleri, TV dizileri, mini diziler, animasyonlar ve çizgi filmleri kapsayabilir.
+
+4.  **Katı JSON Çıktısı:** Ne olursa olsun, cevabın her zaman ve sadece aşağıda belirtilen JSON formatlarında bir nesne olmalıdır.
+
+
+### ANA GÖREV: KARAR MEKANİZMASI ###
+Kullanıcının isteğini analiz et ve aşağıdaki 3 MOD'dan hangisine uyduğuna karar ver.
+
+1.  **Olasılık Listesi Modu:** Kullanıcı, belirsiz veya spesifik ipuçları vererek (ör: "bir adam sürekli aynı günü yaşıyordu...", "hani bir film vardı sonunda her şey rüyaydı...") aklındaki bir veya birkaç yapımı bulmaya çalışıyorsa bu moda geç.
+2.  **Liste Önerme Modu:** Kullanıcı genel bir istekte bulunuyorsa (ör: "bana David Fincher filmleri gibi gerilim filmleri öner", "bu akşam kafa yormayan bir komedi arıyorum") bu moda geç.
+3.  **Belirsizlik Modu:** Kullanıcının isteği bir öneri yapmak için çok genel veya belirsizse (ör: "film öner") bu moda geçerek daha fazla bilgi iste.
 ---
-### MOD 1: Tek Tahmin Modu ###
-*   **Amaç:** Kullanıcının aklındaki **TEK BİR SPESİFİK FİLMİ** doğru bir şekilde tahmin etmek.
-*   **Çıktı Formatı:** Cevabını, SADECE 'recommendations' listesinde TEK BİR film olan bir JSON nesnesi olarak ver. 'summaryText' alanında ise bu filmi neden tahmin ettiğini açıkla.
-**Geniş Bilgi Ağı Kullan:** Sadece konuya değil; karakterlere, sahnelere, nesnelere, sembollere, ikonik repliklere, oyunculara ve yönetmenlere odaklan.
-    **Örnek Çıktı (Tek Tahmin):**
+MOD 1: OLASILIK LİSTESİ MODU (TAHMİN LİSTESİ)
+Amaç: Kullanıcının verdiği ipuçlarına uyan tüm olası yapımları bir liste halinde sunmak. Tek bir doğru cevap varmış gibi davranma.
+İşleyiş: Verdiği ipuçlarına uyan 1'den fazla yapım bul. Bu yapımları, ipuçlarına uyma olasılığı en yüksek olandan başlayarak sırala.
+Örnek Çıktı:
+{
+  "summaryText": "Zaman döngüsü temalı komedi filmleri harikadır! Verdiğiniz ipuçları aklıma birkaç klasik ve modern örnek getirdi. İşte en olası tahminlerim:",
+  "recommendations": [
     {
-      "summaryText": "Verdiğiniz 'voleybol topuyla konuşan adam' ipucu, doğrudan Tom Hanks'in başrolde olduğu bu ikonik hayatta kalma filmini işaret ediyor.",
-      "recommendations": [
-        {
-          "title": "Cast Away",
-          "year": 2000,
-          "reason": "Issız bir adada hayatta kalma mücadelesi veren Chuck Noland'ın, Wilson adını verdiği voleybol topuyla kurduğu dostluk, sinema tarihinin en unutulmaz anlarındandır."
-        }
-      ]
-    }
-
----
-### MOD 2: Liste Önerme Modu ###
-*   **Amaç:** Kullanıcının isteğine uygun, popüler olmayan ama kaliteli, en az 5 adet film önermek.
-*   **Çıktı Formatı:** Cevabını, içerisinde bir 'summaryText' ve 'recommendations' listesinde en az 5 film olan bir JSON nesnesi olarak ver.
-**Geniş Bilgi Ağı Kullan:** Sadece konuya değil; karakterlere, sahnelere, nesnelere, sembollere, ikonik repliklere, oyunculara ve yönetmenlere odaklan.
-    **Örnek Çıktı (Liste Önerme):**
+      "title": "Groundhog Day",
+      "year": 1993,
+      "reason": "Bu, türün en bilinen klasiğidir. Bill Murray'in canlandırdığı bir hava durumu spikeri, aynı günü tekrar tekrar yaşar."
+    },
     {
-      "summaryText": "Inception gibi zihin büken ve gerçeklikle oynayan filmler arıyorsanız, işte size özel seçtiğim, daha az bilinen bazı inciler:",
-      "recommendations": [
-        { "title": "Coherence", "year": 2013, "reason": "..." },
-        { "title": "Primer", "year": 2004, "reason": "..." },
-        { "title": "Synecdoche, New York", "year": 2008, "reason": "..." },
-        { "title": "The Fountain", "year": 2006, "reason": "..." },
-        { "title": "Mr. Nobody", "year": 2009, "reason": "..." }
-      ]
+      "title": "Palm Springs",
+      "year": 2020,
+      "reason": "Daha modern bir yorum olan bu filmde, bir düğünde tanışan iki kişi aynı zaman döngüsüne hapsolur. Komedi ve romantizmi birleştirir."
+    },
+    {
+      "title": "Edge of Tomorrow",
+      "year": 2014,
+      "reason": "Bu bir komediden çok aksiyon-bilim kurgu olsa da, Tom Cruise'un canlandırdığı karakterin aynı günü mizahi bir çaresizlikle tekrar tekrar yaşaması nedeniyle aklınıza bu film de gelmiş olabilir."
     }
+  ]
+}
+
+MOD 2: LİSTE ÖNERME MODU (KÜRATÖR MODU)
+Amaç: Kullanıcının zevkine ve tüm kriterlerine uygun, özenle seçilmiş, en az 5 yapımdan oluşan bir seçki sunmak.
+İşleyiş: "Bütüncül Analiz" ve "Geniş Kapsam" prensiplerine sıkı sıkıya bağlı kal. Kullanıcının belirttiği tüm kriterleri eksiksiz olarak karşılayan yapımlar seç.
+Örnek Çıktı:
+{
+  "summaryText": "Elbette! Hem başrolünde güçlü bir sarışın kadın karakterin olduğu hem de aldatma ve ihanet temasını merkezine alan, farklı türlerden etkileyici filmleri sizin için derledim:",
+  "recommendations": [
+    { "title": "Gone Girl", "year": 2014, "reason": "Rosamund Pike'ın canlandırdığı Amy Dunne karakteri, kocasının onu aldattığını öğrendikten sonra karmaşık bir intikam planı kurar. Bu, istediğiniz temaya tam olarak uyan modern bir gerilim klasiğidir." },
+    { "title": "The Other Woman", "year": 2014, "reason": "Cameron Diaz'ın başrolde olduğu bu komedi filminde, üç kadın aynı adam tarafından aldatıldıklarını fark eder ve intikam için birleşirler." },
+    { "title": "Unfaithful", "year": 2002, "reason": "Bu filmde Diane Lane'in canlandırdığı karakter aldatan taraf olsa da, ihanet ve sonuçları üzerine yoğunlaşan, sarışın bir kadın başrolün merkezde olduğu güçlü bir dramadır." },
+    { "title": "Blue Jasmine", "year": 2013, "reason": "Cate Blanchett'in Oscar kazandığı bu rolde, zengin kocasının onu aldatması ve tüm servetini kaybetmesiyle hayatı altüst olan bir kadını canlandırır." },
+    { "title": "The First Wives Club", "year": 1996, "reason": "Goldie Hawn'ın da aralarında bulunduğu üç kadının, kendilerini daha genç kadınlar için terk eden kocalarından intikam almalarını konu alan eğlenceli bir komedi klasiğidir." }
+  ]
+}
+
+MOD 3: BELİRSİZLİK MODU (YARDIMCI MOD)
+Amaç: Kullanıcıya en iyi öneriyi yapabilmek için gerekli olan ek bilgiyi istemek.
+Örnek Çıktı:
+{
+  "status": "clarification",
+  "question": "Harika bir film bulmanıza yardımcı olmayı çok isterim! Şu an nasıl bir moddasınız? Sizi koltuğunuza bağlayacak bir aksiyon mu, güldürecek bir komedi mi, yoksa zihninizi zorlayacak bir gizem mi arıyorsunuz?"
+}
+---
+KULLANICI GİRDİSİ ANALİZİ
 ---
 
-### KULLANICI İSTEĞİ ###
-"${message}"${excludedMoviesText}
 
-### NİHAİ TALİMAT ###
-Yukarıdaki kullanıcı isteğini analiz et, hangi modda cevap vermen gerektiğine karar ver ve çıktını **SADECE VE SADECE** o mod için belirtilen JSON formatında, başka hiçbir ek metin olmadan döndür.
+
+### ÖNCEKİ KONUŞMA GEÇMİŞİ ###
+${formattedHistory}
+
+### KULLANICININ YENİ İSTEĞİ ###
+${message}
+ 
+---
+NİHAİ TALİMAT
+---
+Yukarıdaki **geçmişi ve yeni isteği** bir bütün olarak analiz et. Hangi moda gireceğine karar ver ve çıktını SADECE VE SADECE o mod için belirtilen JSON formatında, başka hiçbir ek metin olmadan döndür.
 `;
 
     // Debug log - istek bilgilerini logla
     console.log('🎬 Film önerisi isteği alındı:');
     console.log('- Mesaj:', message);
-    console.log('- Hariç tutulacak filmler:', excludedTitles);
     console.log('- Prompt uzunluğu:', prompt.length);
 
-    // Get recommendations from Gemini
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-
-    console.log('🤖 Gemini yanıtı alındı, uzunluk:', text.length);
+    // Get recommendations from Gemini 2.0 using direct API call
+    const geminiResponse = await axios.post(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent',
+      {
+        contents: [
+          {
+            parts: [
+              {
+                text: prompt
+              }
+            ]
+          }
+        ]
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-goog-api-key': process.env.GEMINI_API_KEY
+        }
+      }
+    );
+    
+    const text = geminiResponse.data.candidates[0].content.parts[0].text;
+    console.log('🤖 Gemini 2.0 yanıtı alındı, uzunluk:', text.length);
 
     // Parse the JSON response
     let parsedResponse;
-    try {
-      // Clean the response text and parse JSON
-      const cleanText = text.replace(/```json|```/g, '').trim();
-      parsedResponse = JSON.parse(cleanText);
-    } catch (parseError) {
-      console.error('❌ Gemini yanıtı parse edilemedi:', parseError);
-      console.error('Ham yanıt:', text);
-      return res.status(500).json({ 
-        error: 'AI yanıtı işlenirken hata oluştu',
-        aiResponse: text
-      });
-    }
+try {
+  // === GÜÇLENDİRİLMİŞ TEMİZLEME ADIMI ===
+  // 1. Yanıt metninde ilk açılan '{' karakterini bul.
+  const firstBraceIndex = text.indexOf('{');
+  // 2. Yanıt metninde son kapanan '}' karakterini bul.
+  const lastBraceIndex = text.lastIndexOf('}');
 
-    if (!parsedResponse.recommendations || !Array.isArray(parsedResponse.recommendations)) {
-      console.error('❌ Gemini geçersiz format döndürdü:', parsedResponse);
-      return res.status(500).json({ 
-        error: 'AI geçersiz format döndürdü',
-        aiResponse: text
-      });
-    }
+  // 3. Eğer her ikisi de bulunduysa, sadece bu aralıktaki metni al.
+  if (firstBraceIndex !== -1 && lastBraceIndex !== -1 && lastBraceIndex > firstBraceIndex) {
+    const jsonString = text.substring(firstBraceIndex, lastBraceIndex + 1);
+    
+    // Şimdi JSON.parse işlemini bu temizlenmiş ve izole edilmiş metinle dene.
+    parsedResponse = JSON.parse(jsonString);
 
-    console.log('✅ Gemini yanıtı parse edildi, film sayısı:', parsedResponse.recommendations.length);
+  } else {
+    // Eğer metin içinde geçerli bir JSON nesnesi başlangıcı/bitişi yoksa, hata fırlat.
+    throw new Error("Yanıt metninde geçerli bir JSON nesnesi bulunamadı.");
+  }
+  
+} catch (parseError) {
+  console.error('❌ Gemini yanıtı parse edilemedi:', parseError.message);
+  console.log('--- Hatalı Ham Yanıt ---');
+  console.log(text); // Hatanın kaynağını görmek için orijinal metni logla
+  console.log('------------------------');
+  return res.status(500).json({ 
+    error: 'AI yanıtı işlenirken hata oluştu. Yanıt geçerli bir formatta değil.',
+    aiResponse: text
+  });
+}
 
-    // Search each movie on TMDB
-    const moviePromises = parsedResponse.recommendations.map(movieRecommendation => 
-      searchMovieOnTMDB(movieRecommendation)
-    );
-    const movieResults = await Promise.all(moviePromises);
+// ++++++++++++++++ YENİ VE DOĞRU MANTIK BU BLOK ++++++++++++++++
+// ADIM 1: Gelen yanıt bir AÇIKLAMA İSTEĞİ mi diye kontrol et.
+if (parsedResponse.status === 'clarification') {
+  
+  console.log('✅ Gemini bir açıklama istedi (Belirsizlik Modu). Yanıt ön yüze gönderiliyor.');
+  // Bu bir hata değil, beklenen bir durum. 
+  // Bu JSON'u olduğu gibi (HTTP 200 OK status ile) ön yüze (frontend) gönder.
+  // Ön yüz bu yanıtı alıp kullanıcıya soruyu gösterecek.
+  return res.json(parsedResponse);
 
-    // Filter out null results
-    const validMovies = movieResults.filter(movie => movie !== null);
+} 
+// ADIM 2: Eğer açıklama isteği değilse, o zaman bir FİLM LİSTESİ mi diye kontrol et.
+else if (parsedResponse.recommendations && Array.isArray(parsedResponse.recommendations)) {
+  
+  console.log('✅ Gemini yanıtı parse edildi, film sayısı:', parsedResponse.recommendations.length);
 
-    console.log('🎭 TMDB araması tamamlandı, bulunan film sayısı:', validMovies.length);
+  // Search each movie on TMDB
+  const moviePromises = parsedResponse.recommendations.map(movieRecommendation => 
+    searchMovieOnTMDB(movieRecommendation)
+  );
+  const movieResults = await Promise.all(moviePromises);
 
-    res.json({
-      message: parsedResponse.summaryText || `İşte "${message}" isteğinize göre seçtiğim özel filmler:`,
-      movies: validMovies,
-      originalQuery: message
-    });
+  // Filter out null results
+  const validMovies = movieResults.filter(movie => movie !== null);
+
+  console.log('🎭 TMDB araması tamamlandı, bulunan film sayısı:', validMovies.length);
+
+  // Bu da beklenen bir durum, film listesini ön yüze gönder.
+  res.json({
+    message: parsedResponse.summaryText || `İşte "${message}" isteğinize göre seçtiğim özel filmler:`,
+    movies: validMovies,
+    originalQuery: message
+  });
+
+} 
+// ADIM 3: Eğer ne açıklama ne de geçerli film listesi ise, o zaman GERÇEKTEN bir hata vardır.
+else {
+  
+  console.error('❌ Gemini geçersiz veya beklenmeyen bir format döndürdü:', parsedResponse);
+  return res.status(500).json({ 
+    error: 'AI geçersiz veya beklenmeyen bir format döndürdü',
+    aiResponse: text
+  });
+
+}
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
   } catch (error) {
     // Kapsamlı hata loglama
@@ -411,7 +645,7 @@ Yukarıdaki kullanıcı isteğini analiz et, hangi modda cevap vermen gerektiği
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'CineMind Backend is running' });
+  res.json({ status: 'OK', message: 'CinePop Backend is running' });
 });
 
 // Test endpoint for TMDB connection
@@ -426,6 +660,52 @@ app.get('/api/test-tmdb', async (req, res) => {
     res.json({ status: 'TMDB connection successful', data: response.data.results.slice(0, 3) });
   } catch (error) {
     res.status(500).json({ status: 'TMDB connection failed', error: error.message });
+  }
+});
+
+// List available Gemini models
+app.get('/api/list-models', async (req, res) => {
+  try {
+    const models = await genAI.listModels();
+    res.json({ status: 'Success', models: models });
+  } catch (error) {
+    res.status(500).json({ status: 'Failed to list models', error: error.message });
+  }
+});
+
+// Test endpoint for Gemini models with direct API call
+app.get('/api/test-gemini-direct', async (req, res) => {
+  try {
+    const response = await axios.post(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent',
+      {
+        contents: [
+          {
+            parts: [
+              {
+                text: "Hello, test message from CinePop backend"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-goog-api-key': process.env.GEMINI_API_KEY
+        }
+      }
+    );
+    
+    res.json({ 
+      status: 'Gemini 2.0 connection successful', 
+      response: response.data.candidates[0].content.parts[0].text 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'Gemini 2.0 connection failed', 
+      error: error.response?.data || error.message 
+    });
   }
 });
 
@@ -1289,45 +1569,57 @@ app.get('/api/users/:userId/follow-stats', async (req, res) => {
   }
 });
 
-// TAKİPÇİLER LİSTESİNİ GETİRİR
-app.get('/api/users/:userId/followers', async (req, res) => {
+app.delete('/api/notifications/:notificationId', decodeToken, async (req, res) => {
   try {
-    const { userId } = req.params;
-    console.log(`🔍 Fetching FOLLOWERS list for user: ${userId}`);
-    
-    const userDoc = await db.collection('users').doc(userId).get();
-    if (!userDoc.exists) {
-      return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
-    }
-    const followerIds = userDoc.data().followers || [];
+    const { notificationId } = req.params;
+    const userId = req.currentUserId;
 
-    if (followerIds.length === 0) {
-      return res.json([]);
+    const notificationRef = db.collection('notifications').doc(notificationId);
+    const doc = await notificationRef.get();
+
+    // Bildirimin var olup olmadığını ve bu kullanıcıya ait olup olmadığını kontrol et
+    if (!doc.exists || doc.data().userId !== userId) {
+      return res.status(403).json({ error: 'Bu bildirimi silme yetkiniz yok.' });
     }
 
-    const userPromises = followerIds.map(id => db.collection('users').doc(id).get());
-    const userDocs = await Promise.all(userPromises);
+    // Bildirimi sil
+    await notificationRef.delete();
     
-    const followersList = userDocs
-      .map(doc => {
-        if (doc.exists) {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            username: data.username,
-            displayName: data.displayName,
-            avatar: data.avatar || null
-          };
-        }
-        return null;
-      })
-      .filter(Boolean);
-
-    res.json(followersList);
+    res.status(200).json({ message: 'Bildirim başarıyla silindi.' });
   } catch (error) {
-    res.status(500).json({ error: 'Takipçiler listesi alınamadı' });
+    console.error("Bildirim silinirken hata:", error);
+    res.status(500).json({ error: "Sunucu hatası." });
   }
 });
+
+// POST /api/notifications/delete-all
+// Kullanıcının TÜM bildirimlerini siler.
+app.post('/api/notifications/delete-all', decodeToken, async (req, res) => {
+  try {
+    const userId = req.currentUserId;
+    const snapshot = await db.collection('notifications')
+      .where('userId', '==', userId)
+      .get();
+
+    if (snapshot.empty) {
+      return res.status(200).json({ message: 'Silinecek bildirim yok.' });
+    }
+
+    // Toplu silme işlemi için batch kullan
+    const batch = db.batch();
+    snapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+
+    res.status(200).json({ message: 'Tüm bildirimler silindi.' });
+  } catch (error) {
+    console.error("Tüm bildirimler silinirken hata:", error);
+    res.status(500).json({ error: "Sunucu hatası." });
+  }
+});
+
+// TAKİPÇİLER LİSTESİNİ GETİRİR
 
 
 // TAKİPÇİLER LİSTESİNİ GETİRİR
@@ -1861,6 +2153,52 @@ app.get('/api/users/:userId/followers', async (req, res) => {
 // ==============================================
 // END - USERNAME TABANLI PROFİL SİSTEMİ
 // ==============================================
+// BİLDİRİMLER ENDPOINTİ
+// ==============================================
+// Kullanıcının bildirimlerini getirir
+
+app.get('/api/notifications', decodeToken, async (req, res) => {
+    try {
+        const userId = req.currentUserId; // decodeToken'dan gelen güvenli ID
+        const snapshot = await db.collection('notifications')
+            .where('userId', '==', userId) // <-- Doğru alan adı: 'userId'
+            .where('isRead', '==', false)
+            .orderBy('createdAt', 'desc')
+            .get();
+        
+        const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        res.status(200).json(notifications);
+    } catch (error) {
+        console.error("Bildirimler alınamadı:", error);
+        res.status(500).json({ error: "Sunucu hatası." });
+    }
+});
+
+
+app.post('/api/notifications/mark-as-read', decodeToken, async (req, res) => {
+    try {
+        const userId = req.currentUserId;
+        const snapshot = await db.collection('notifications')
+            .where('userId', '==', userId)
+            .where('isRead', '==', false)
+            .get();
+
+        if (snapshot.empty) {
+            return res.status(200).json({ message: 'Okunacak yeni bildirim yok.' });
+        }
+
+        const batch = db.batch();
+        snapshot.docs.forEach(doc => {
+            batch.update(doc.ref, { isRead: true });
+        });
+        await batch.commit();
+
+        res.status(200).json({ message: 'Tüm bildirimler okundu olarak işaretlendi.' });
+    } catch (error) {
+        console.error("Bildirimler okunurken hata:", error);
+        res.status(500).json({ error: "Sunucu hatası." });
+    }
+});
 
 // ==============================================
 // GÜNÜN FİLMİ SİSTEMİ
@@ -2094,6 +2432,6 @@ app.post('/api/random-episode', async (req, res) => {
 // ==============================================
 
 app.listen(PORT, () => {
-  console.log(`🎬 CineMind Backend server running on port ${PORT}`);
+  console.log(`� CinePop Backend server running on port ${PORT}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
 });

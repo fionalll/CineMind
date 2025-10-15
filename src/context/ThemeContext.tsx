@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-export type ThemeName = 'default' | 'Sunset Warmth' | 'Coffee' | 'earthy-green' | 'passionate-purple' | 'dusty-pink';
+export type ThemeName = 'default' | 'truman' | 'halloween' | 'peach' | 'marshmallow' | 'broadway' | 'sunrise' | 'pistachio' | 'watermelon';
 
 export interface Theme {
   id: ThemeName;
@@ -25,53 +25,83 @@ export const themes: Theme[] = [
     }
   },
   {
-    id: 'Sunset Warmth',
-    name: 'Sunset Warmth',
-    description: 'Kahverengi ve sıcak turuncu tonları',
+    id: 'truman',
+    name: 'Truman',
+    description: 'Açık mor ve lavanta tonları',
     preview: {
-      primary: '#3b2f2f',
-      secondary: '#523c2f',
-      accent: '#d65a31'
+      primary: '#F4F5FF',
+      secondary: '#D0CDFF',
+      accent: '#BDBFFF'
     }
   },
   {
-    id: 'Coffee',
-    name: 'Coffee',
-    description: 'Koyu kahve ve krem tonları',
+    id: 'halloween',
+    name: 'Cadılar Bayramı',
+    description: 'Turuncu ve koyu kahve Halloween tonları',
     preview: {
-      primary: '#2b2623',
-      secondary: '#3b352f',
-      accent: '#6a7f71'
+      primary: '#443737',
+      secondary: '#934D01',
+      accent: '#D58E2C'
     }
   },
   {
-    id: 'earthy-green',
-    name: 'Toprak Yeşili',
-    description: 'Doğa dostu yeşil tonları',
+    id: 'peach',
+    name: 'Peach',
+    description: 'Yumuşak şeftali ve pembe tonları',
     preview: {
-      primary: '#162a1a',
-      secondary: '#203623',
-      accent: '#7ea384'
+      primary: '#FFE7E7',
+      secondary: '#FFC5C5',
+      accent: '#F19A9A'
     }
   },
   {
-    id: 'passionate-purple',
-    name: 'Tutkulu Mor',
-    description: 'Kahverengi ve mor tonları',
+    id: 'marshmallow',
+    name: 'Marshmallow',
+    description: 'Krem ve pastel mor tonları',
     preview: {
-      primary: '#3b2f2f',
-      secondary: '#5c4a47',
-      accent: '#a9746e'
+      primary: '#FFFDF1',
+      secondary: '#FDFFD2',
+      accent: '#D5B3D5'
     }
   },
   {
-    id: 'dusty-pink',
-    name: 'Pudra Pembesi',
-    description: 'Açık ve pastel pembe tonları',
+    id: 'broadway',
+    name: 'Broadway',
+    description: 'Altın ve koyu kırmızı tiyatro tonları',
     preview: {
-      primary: '#fff3f5',
-      secondary: '#f9dde0',
-      accent: '#d88c97'
+      primary: '#FFF0C4',
+      secondary: '#8C1007',
+      accent: '#660B05'
+    }
+  },
+  {
+    id: 'sunrise',
+    name: 'Sunrise',
+    description: 'Gün doğumu sarı ve mavi tonları',
+    preview: {
+      primary: '#FEFFC4',
+      secondary: '#FFDE63',
+      accent: '#799EFF'
+    }
+  },
+  {
+    id: 'pistachio',
+    name: 'Pistachio',
+    description: 'Fıstık yeşili ve kahverengi doğal tonları',
+    preview: {
+      primary: '#E9EED9',
+      secondary: '#CBD2A4',
+      accent: '#54473F'
+    }
+  },
+  {
+    id: 'watermelon',
+    name: 'Watermelon',
+    description: 'Karpuz yeşili ve pembe tatlı tonları',
+    preview: {
+      primary: '#FCFFE0',
+      secondary: '#F5DAD2',
+      accent: '#75A47F'
     }
   }
 ];

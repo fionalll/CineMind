@@ -22,8 +22,23 @@ const app = initializeApp(firebaseConfig);
 // Auth (Kimlik Doğrulama) servisini başlat
 const auth = getAuth(app);
 
-// Firestore (Veritabanı) servisini başlat
-const db = getFirestore(app);
+// Firestore (Veritabanı) servisini güvenli bir şekilde başlat
+let db;
+try {
+  db = getFirestore(app);
+  console.log('✅ Firestore başarıyla başlatıldı');
+} catch (error) {
+  console.error('❌ Firestore başlatılırken hata:', error);
+  // Fallback olarak tekrar dene
+  setTimeout(() => {
+    try {
+      db = getFirestore(app);
+      console.log('✅ Firestore ikinci denemede başarıyla başlatıldı');
+    } catch (retryError) {
+      console.error('❌ Firestore ikinci denemede de başarısız:', retryError);
+    }
+  }, 1000);
+}
 
 // Analytics servisini başlat (sadece tarayıcıda çalışacak şekilde)
 let analytics;

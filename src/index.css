@@ -9,6 +9,7 @@
   --background-secondary: #1f2937;
   --background-tertiary: #374151;
   --background-sidebar: #181f2a; /* Sidebar için özel arka plan (default koyu mavi-gri) */
+  --background-navbar: #1f2937; /* Navbar için özel arka plan */
   --text-primary: #ffffff;
   --text-secondary: #d1d5db;
   --text-muted: #9ca3af;
@@ -21,114 +22,205 @@
   --success: #10b981;
   }
 
-  /* Tema 4: Sunset Warmth */
-  [data-theme='Sunset Warmth'] {
-    --background-primary: #3b2f2f;    /* Koyu kahverengi alt tonlu koyu arka plan */
-    --background-secondary: #523c2f;  /* Orta kahverengi-turuncu alt tonlu */
-    --background-tertiary: #6b4a30;   /* Açık kahverengi-turuncu alt tonlu */
-    --background-sidebar: #4a2e1e;    /* Sidebar için özel sıcak kahve-turuncu */
+  /* Tema 1: Truman */
+  [data-theme='truman'] {
+    --background-primary: #F4F5FF;    /* Ana arka plan - çok açık mor */
+    --background-secondary: #E8E9FF;  /* İkincil arka plan - biraz daha koyu */
+    --background-tertiary: #DCDEFF;   /* Üçüncül arka plan */
+    --background-sidebar: #D0CDFF;    /* Sidebar rengi - açık mor */
+    --background-navbar: #BDBFFF;     /* Navbar rengi - orta mor */
     
-    --text-primary: #f1d7b8;          /* Krem-bej, yumuşak okunabilir */
-    --text-secondary: #d9a756;        /* Pastel hardal sarısı */
-    --text-muted: #b98b58;            /* Soluk toprak sarısı */
+    --text-primary: #2D2A4A;          /* Koyu mor, okunabilir */
+    --text-secondary: #4A4770;        /* Orta koyu mor */
+    --text-muted: #6B6B9A;            /* Soluk mor */
     
-    --primary: #d65a31;               /* Yumuşak turuncu-kırmızı */
-    --primary-hover: #b34928;         /* Biraz koyu vurgu */
+    --primary: #7C7AFF;               /* Ana vurgu - canlı mor */
+    --primary-hover: #6B69E6;         /* Hover için koyu mor */
     
-    --border-color: #d9a756;          /* Sıcak sarı-kahve sınır */
-    --accent: #f4c38d;                /* Açık krem-turuncu alt ton */
+    --border-color: #A8A5FF;          /* Sınır rengi - biraz koyu mor */
+    --accent: #A8A5FF;                /* Aksan rengi - orta mor */
     
-    --warning: #e3b86c;               /* Pastel hardal sarısı */
-    --error: #c75b5b;                 /* Yumuşak tuğla kırmızısı */
-    --success: #7d9d74;               /* Yeşil ton */
+    --warning: #FFB84D;               /* Turuncu warning */
+    --error: #FF6B6B;                 /* Kırmızı error */
+    --success: #4ECDC4;               /* Turkuaz success */
   }
 
-  /* Tema 1: Coffee */
-  [data-theme='Coffee'] {
-    --background-primary: #2b2623;    /* Koyu kahve-siyah karışımı */
-    --background-secondary: #3b352f;  /* Orta koyu kahve */
-    --background-tertiary: #4a423a;   /* Yumuşak kahve-gri ton */
-    --background-sidebar: #332b25;    /* Sidebar için özel koyu kahve */
+  /* Tema 2: Cadılar Bayramı */
+  [data-theme='halloween'] {
+    --background-primary: #443737;    /* Ana arka plan - koyu kahverengi */
+    --background-secondary: #5a4a44;  /* İkincil arka plan - biraz açık kahve */
+    --background-tertiary: #6b5b55;   /* Üçüncül arka plan */
+    --background-sidebar: #934D01;    /* Sidebar rengi - koyu turuncu */
+    --background-navbar: #D58E2C;     /* Navbar rengi - altın turuncu */
     
-    --text-primary: #d7cdc6;          /* Açık krem-bej */
-    --text-secondary: #b6aca4;        /* Soft bej-gri */
-    --text-muted: #9e958e;            /* Soluk kahve-gri */
+    --text-primary: #f5e6d3;          /* Açık krem, okunabilir */
+    --text-secondary: #e0c8a8;        /* Soft krem-sarı */
+    --text-muted: #c4a882;            /* Soluk altın */
     
-    --primary: #6a7f71;               /* Koyu soft zeytin yeşili */
-    --primary-hover: #586858;         /* Daha koyu zeytin yeşili */
+    --primary: #D58E2C;               /* Ana vurgu - altın turuncu */
+    --primary-hover: #B8751F;         /* Hover için koyu altın */
     
-    --border-color: #978b80;          /* Yumuşak kahve sınır */
-    --accent: #7a6f63;                /* Orta kahve-bej aksan */
+    --border-color: #934D01;          /* Sınır rengi - koyu turuncu */
+    --accent: #FF8C42;                /* Aksan rengi - parlak turuncu */
     
-    --warning: #b7965f;               /* Sıcak pastel hardal */
-    --error: #a05252;                 /* Mat tuğla kırmızısı */
-    --success: #7a8f7b;               /* Yeşil ton */
+    --warning: #D58E2C;               /* Altın turuncu warning */
+    --error: #C55A3A;                 /* Yumuşak kırmızı-turuncu */
+    --success: #7A8471;               /* Yeşil ton */
   }
 
-  /* Tema 2: Toprak Yeşili */
-  [data-theme='earthy-green'] {
-    --background-primary: #162a1a;    /* Çok koyu zeytin yeşili */
-    --background-secondary: #203623;  /* Koyu orman yeşili */
-    --background-tertiary: #2a432d;   /* Koyu yaprak yeşili */
-    --background-sidebar: #1c2e1e;    /* Sidebar için özel koyu yeşil */
+  /* Tema 3: Peach */
+  [data-theme='peach'] {
+    --background-primary: #FFE7E7;    /* Ana arka plan - çok açık şeftali */
+    --background-secondary: #FFD4D4;  /* İkincil arka plan - açık şeftali */
+    --background-tertiary: #FFC0C0;   /* Üçüncül arka plan */
+    --background-sidebar: #FFC5C5;    /* Sidebar rengi - açık şeftali pembe */
+    --background-navbar: #F19A9A;     /* Navbar rengi - orta şeftali pembe */
     
-    --text-primary: #c9d6ca;          /* Yumuşak açık yeşil-gri */
-    --text-secondary: #a3b9a4;        /* Pastel yeşil */
-    --text-muted: #7d8b79;            /* Soluk zeytin yeşili */
+    --text-primary: #5D2D2D;          /* Koyu kahverengi, okunabilir */
+    --text-secondary: #7A4444;        /* Orta koyu kahverengi */
+    --text-muted: #9B6B6B;            /* Soluk kahverengi */
     
-    --primary: #7ea384;               /* Soft nane yeşili */
-    --primary-hover: #6b8a73;         /* Biraz daha koyu nane yeşili */
+    --primary: #E85A5A;               /* Ana vurgu - canlı şeftali pembe */
+    --primary-hover: #D94848;         /* Hover için koyu şeftali */
     
-    --border-color: #a3b9a4;          /* Pastel yeşil kenar */
-    --accent: #9dbba7;                /* Hafif gri-yeşil */
+    --border-color: #F19A9A;          /* Sınır rengi - navbar rengi */
+    --accent: #FF7F7F;                /* Aksan rengi - parlak şeftali */
     
-    --warning: #c8a15c;               /* Pastel altın turuncu */
-    --error: #a76d6d;                 /* Pastel kırmızımsı kahve */
-    --success: #7ea384;               /* Yeşil ton */
+    --warning: #FFB366;               /* Turuncu warning */
+    --error: #E85A5A;                 /* Şeftali kırmızı error */
+    --success: #66B266;               /* Yeşil success */
   }
 
-  /* Tema 3: Tutkulu Mor */
-  [data-theme='passionate-purple'] {
-    --background-primary: #3b2f2f;    /* Koyu kahverengi */
-    --background-secondary: #5c4a47;  /* Orta kahverengi */
-    --background-tertiary: #7b6a65;   /* Açık kahverengi */
-    --background-sidebar: #4a3a36;    /* Sidebar için özel morumsu kahve */
+  /* Tema 4: Marshmallow */
+  [data-theme='marshmallow'] {
+    --background-primary: #FFFDF1;    /* Ana arka plan - krem beyazı */
+    --background-secondary: #FFFAEB;  /* İkincil arka plan - açık krem */
+    --background-tertiary: #FFF6E0;   /* Üçüncül arka plan */
+    --background-sidebar: #FDFFD2;    /* Sidebar rengi - açık sarı krem */
+    --background-navbar: #D5B3D5;     /* Navbar rengi - pastel mor */
     
-    --text-primary: #d9c9b8;          /* Açık bej / krem */
-    --text-secondary: #b39c85;        /* Soft kahve tonu */
-    --text-muted: #8b7a6b;            /* Soluk kahve */
+    --text-primary: #4A3A4A;          /* Koyu mor-gri, okunabilir */
+    --text-secondary: #6B5B6B;        /* Orta koyu mor-gri */
+    --text-muted: #8C7C8C;            /* Soluk mor-gri */
     
-    --primary: #a9746e;               /* Koyu toprak kahvesi */
-    --primary-hover: #8a625d;         /* Biraz koyu vurgu */
+    --primary: #B388B3;               /* Ana vurgu - yumuşak mor */
+    --primary-hover: #A077A0;         /* Hover için koyu mor */
     
-    --border-color: #b39c85;          /* Bej kahve sınır */
-    --accent: #c9b89b;                /* Açık toprak rengi */
+    --border-color: #E5D4E5;          /* Sınır rengi - açık mor */
+    --accent: #C9A6C9;                /* Aksan rengi - orta mor */
     
-    --warning: #d98840;               /* Soft turuncu */
-    --error: #b7413e;                 /* Koyu kırmızımsı kahve */
-    --success: #7b9a6a;               /* Yeşil ton */
+    --warning: #F4C430;               /* Altın sarısı warning */
+    --error: #D67B7B;                 /* Yumuşak kırmızı error */
+    --success: #7BC47B;               /* Yeşil success */
   }
 
-  /* Tema 4: Pudra Pembesi */
-  [data-theme='dusty-pink'] {
-    --background-primary: #fff3f5;    /* Çok açık pembe-pudra */
-    --background-secondary: #f9dde0;  /* Pastel pembe alt ton */
-    --background-tertiary: #f4c7cb;   /* Yumuşak gül kurusu */
-    --background-sidebar: #f3c2c9;    /* Sidebar için özel pudra pembe */
+  /* Tema 5: Broadway */
+  [data-theme='broadway'] {
+    --background-primary: #FFF0C4;    /* Ana arka plan - altın krem */
+    --background-secondary: #FFEAA7;  /* İkincil arka plan - açık altın */
+    --background-tertiary: #FFE48A;   /* Üçüncül arka plan */
+    --background-sidebar: #8C1007;    /* Sidebar rengi - koyu kırmızı */
+    --background-navbar: #660B05;     /* Navbar rengi - çok koyu kırmızı */
     
-    --text-primary: #5c4147;          /* Koyu gül kurusu, okunaklı */
-    --text-secondary: #7e575e;        /* Orta koyulukta pembe-kahve */
-    --text-muted: #a1868f;            /* Soluk pembe-kahve */
+    --text-primary: #1A1A1A;          /* Ana yazı - koyu siyah */
+    --text-secondary: #2D2D2D;        /* İkincil yazı - orta siyah */
+    --text-muted: #666666;            /* Soluk yazı - gri siyah */
     
-    --primary: #d88c97;               /* Ana vurgu: tatlı pembe */
-    --primary-hover: #c07883;         /* Hover için koyu pembe */
+    --primary: #B8270B;               /* Ana vurgu - canlı kırmızı */
+    --primary-hover: #A01F09;         /* Hover için koyu kırmızı */
     
-    --border-color: #e1a2aa;          /* Açık pembe sınır */
-    --accent: #f0b7bc;                /* Yumuşak pembe aksan */
+    --border-color: #D4A574;          /* Sınır rengi - altın kahve */
+    --accent: #E6B800;                /* Aksan rengi - parlak altın */
     
-    --warning: #f4b183;               /* Pastel turuncu */
-    --error: #d1606a;                 /* Yumuşak kırmızı */
-    --success: #7a9e7e;               /* Yeşil ton */
+    --warning: #FF8C00;               /* Turuncu warning */
+    --error: #CC2936;                 /* Kırmızı error */
+    --success: #52A447;               /* Yeşil success */
+  }
+
+/* Broadway teması için navbar yazıları altın krem rengi */
+[data-theme='broadway'] .navbar-text,
+[data-theme='broadway'] .nav-link,
+[data-theme='broadway'] .navbar a,
+[data-theme='broadway'] .navbar button,
+[data-theme='broadway'] .navbar span {
+  color: #FFF0C4 !important;
+}
+
+/* Broadway teması için sidebar film türleri yazıları background rengi */
+[data-theme='broadway'] .sidebar-bg .text-primary,
+[data-theme='broadway'] .sidebar-bg h2,
+[data-theme='broadway'] .sidebar-button span,
+[data-theme='broadway'] .sidebar-button,
+[data-theme='broadway'] .sidebar-bg button span,
+[data-theme='broadway'] .sidebar-bg .text-secondary {
+  color: #FFF0C4 !important; /* Background ile aynı altın krem rengi */
+}
+
+/* Broadway teması için sidebar buton hover efektleri */
+[data-theme='broadway'] .sidebar-button:hover {
+  background-color: rgba(255, 240, 196, 0.1) !important;
+}
+
+[data-theme='broadway'] .sidebar-button.active {
+  background-color: rgba(255, 240, 196, 0.2) !important;
+  border: 1px solid rgba(255, 240, 196, 0.3);
+}
+
+/* Broadway teması için profil kartı yazıları siyah */
+[data-theme='broadway'] .text-2xl.font-bold.text-primary,
+[data-theme='broadway'] .text-lg.text-secondary {
+  color: #1A1A1A !important; /* Siyah renk */
+}
+
+/* Broadway teması için profil sayfasındaki kullanıcı bilgileri */
+[data-theme='broadway'] h3.text-primary,
+[data-theme='broadway'] p.text-secondary {
+  color: #1A1A1A !important; /* Email ve isim siyah */
+}
+
+/* Broadway teması için hesap durumu yazıları da siyah */
+[data-theme='broadway'] .bg-secondary h4.text-primary,
+[data-theme='broadway'] .bg-secondary p.text-secondary {
+  color: #1A1A1A !important;
+}
+
+/* Broadway teması için navbar dropdown menü yazıları siyah */
+[data-theme='broadway'] .absolute.right-0.mt-2 .text-primary,
+[data-theme='broadway'] .absolute.right-0.mt-2 .text-secondary,
+[data-theme='broadway'] .absolute.right-0.mt-2 .text-sm,
+[data-theme='broadway'] .absolute.right-0.mt-2 .text-xs,
+[data-theme='broadway'] .absolute.right-0.mt-2 .block,
+[data-theme='broadway'] .absolute.right-0.mt-2 button {
+  color: #1A1A1A !important;
+}
+
+/* Broadway teması için dropdown hover efektleri */
+[data-theme='broadway'] .absolute.right-0.mt-2 .hover\:text-primary:hover,
+[data-theme='broadway'] .absolute.right-0.mt-2 .transition-colors:hover {
+  color: #B8270B !important; /* Accent rengi */
+}
+
+  /* Tema 6: Sunrise */
+  [data-theme='sunrise'] {
+    --background-primary: #FEFFC4;    /* Ana arka plan - açık sarı krem */
+    --background-secondary: #FFFAAD;  /* İkincil arka plan - sarı krem */
+    --background-tertiary: #FFF596;   /* Üçüncül arka plan */
+    --background-sidebar: #FFDE63;    /* Sidebar rengi - parlak sarı */
+    --background-navbar: #799EFF;     /* Navbar rengi - açık mavi */
+    
+    --text-primary: #2A2A5C;          /* Koyu mavi-mor, okunabilir */
+    --text-secondary: #404078;        /* Orta koyu mavi-mor */
+    --text-muted: #5656A0;            /* Soluk mavi-mor */
+    
+    --primary: #5577FF;               /* Ana vurgu - canlı mavi */
+    --primary-hover: #4466E6;         /* Hover için koyu mavi */
+    
+    --border-color: #B3C7FF;          /* Sınır rengi - açık mavi */
+    --accent: #FFB347;                /* Aksan rengi - turuncu sarı */
+    
+    --warning: #FFA500;               /* Turuncu warning */
+    --error: #FF6B6B;                 /* Kırmızı error */
+    --success: #4CAF50;               /* Yeşil success */
   }
 
   /* Global HTML ve Body stilleri */
@@ -250,7 +342,7 @@
 
   /* Navigation styles */
   .navbar {
-    background-color: var(--background-secondary);
+    background-color: var(--background-navbar);
     border-bottom: 1px solid var(--border-color);
     transition: all 0.3s ease;
   }
@@ -287,6 +379,31 @@
     background-color: var(--background-secondary);
     border-right: 1px solid var(--border-color);
     transition: all 0.3s ease;
+  }
+
+  .sidebar-bg {
+    background-color: var(--background-sidebar);
+    transition: all 0.3s ease;
+  }
+
+  .sidebar-button {
+    background-color: rgba(0, 0, 0, 0.1);
+    color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+  }
+
+  .sidebar-button:hover {
+    background-color: rgba(0, 0, 0, 0.2);
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .sidebar-button.active {
+    background-color: var(--primary);
+    color: var(--text-primary);
+    border-color: var(--primary);
+    font-weight: 600;
   }
 
   .sidebar-item {
@@ -1336,4 +1453,130 @@
     justify-content: center;
     min-height: 8rem;
   }
+}
+
+/* Tema 7: Pistachio */
+[data-theme='pistachio'] {
+  --background-primary: #E9EED9;    /* Ana arka plan - açık yeşil krem */
+  --background-secondary: #DDE7CC;  /* İkincil arka plan - yeşil krem */
+  --background-tertiary: #D1E0BF;   /* Üçüncül arka plan */
+  --background-sidebar: #CBD2A4;    /* Sidebar rengi - açık yeşil */
+  --background-navbar: #54473F;     /* Navbar rengi - koyu kahverengi */
+  
+  --text-primary: #2C3E2C;          /* Koyu yeşil, okunabilir */
+  --text-secondary: #3A4A3A;        /* Orta koyu yeşil */
+  --text-muted: #5A6A5A;            /* Soluk yeşil */
+  
+  --primary: #7D8F7D;               /* Ana vurgu - orta yeşil */
+  --primary-hover: #6B7B6B;         /* Hover için koyu yeşil */
+  
+  --border-color: #B8C5B8;          /* Sınır rengi - açık yeşil */
+  --accent: #A18B7F;                /* Aksan rengi - krem kahverengi */
+  
+  --warning: #D4A574;               /* Kahverengi-turuncu warning */
+  --error: #C85A5A;                 /* Koyu kırmızı error */
+  --success: #7A9B7A;               /* Yeşil success */
+}
+
+/* Pistachio teması için navbar yazıları beyaz */
+[data-theme='pistachio'] .navbar-text,
+[data-theme='pistachio'] .nav-link,
+[data-theme='pistachio'] .navbar a,
+[data-theme='pistachio'] .navbar button,
+[data-theme='pistachio'] .navbar span {
+  color: #FFFFFF !important;
+}
+
+/* Tema 8: Watermelon */
+[data-theme='watermelon'] {
+  --background-primary: #FCFFE0;    /* Ana arka plan - açık krem sarı */
+  --background-secondary: #FCFFE0;  /* İkincil arka plan - krem yeşil */
+  --background-tertiary: #F4F9AC;   /* Üçüncül arka plan */
+  --background-sidebar: #F5DAD2;    /* Sidebar rengi - açık pembe */
+  --background-navbar: #75A47F;     /* Navbar rengi - karpuz yeşili */
+  
+  --text-primary: #2A3E2A;          /* Koyu yeşil, okunabilir */
+  --text-secondary: #3A4E3A;        /* Orta koyu yeşil */
+  --text-muted: #5A6E5A;            /* Soluk yeşil */
+  
+  --primary: #75A47F;               /* Ana vurgu - karpuz yeşili */
+  --primary-hover: #649168;         /* Hover için koyu yeşil */
+  
+  --border-color: #C8D5C8;          /* Sınır rengi - açık yeşil */
+  --accent: #E8B4B8;                /* Aksan rengi - açık pembe */
+  
+  --warning: #F2B880;               /* Açık turuncu warning */
+  --error: #D17A7A;                 /* Açık kırmızı error */
+  --success: #7AB07A;               /* Yeşil success */
+}
+
+/* Watermelon teması için navbar yazıları beyaz */
+[data-theme='watermelon'] .navbar-text,
+[data-theme='watermelon'] .nav-link,
+[data-theme='watermelon'] .navbar a,
+[data-theme='watermelon'] .navbar button,
+[data-theme='watermelon'] .navbar span {
+  color: #FFFFFF !important;
+}
+
+/* Watermelon teması için profil sayfası buton efektleri */
+[data-theme='watermelon'] .bg-secondary {
+  background-color: #F5DAD2 !important; /* Açık pembe */
+}
+
+[data-theme='watermelon'] .hover\:bg-accent:hover {
+  background-color: rgba(232, 180, 184, 0.6) !important; /* Accent rengi opacity ile */
+}
+
+[data-theme='watermelon'] .border-default {
+  border-color: rgba(200, 213, 200, 0.5) !important; /* Açık yeşil border */
+}
+
+[data-theme='watermelon'] .hover\:border-accent:hover {
+  border-color: #E8B4B8 !important; /* Accent rengi */
+}
+
+/* Watermelon temasında hover efektleri için özel geçişler */
+[data-theme='watermelon'] button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(117, 164, 127, 0.15);
+}
+
+/* Watermelon temasında film öneri listesi stilleri */
+[data-theme='watermelon'] .film-oneri-item {
+  background-color: #F5DAD2 !important;
+  border: 1px solid rgba(200, 213, 200, 0.3) !important;
+}
+
+[data-theme='watermelon'] .film-oneri-item:hover {
+  background-color: rgba(232, 180, 184, 0.6) !important;
+  border-color: #E8B4B8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(117, 164, 127, 0.2);
+}
+
+/* Watermelon temasında genel bg-primary öğeleri */
+[data-theme='watermelon'] .bg-primary {
+  background-color: rgba(245, 218, 210, 0.8) !important;
+}
+
+/* Watermelon temasında hover efektleri */
+[data-theme='watermelon'] .hover\:bg-accent:hover {
+  background-color: rgba(232, 180, 184, 0.3) !important;
+}
+
+/* Watermelon temasında liste container'ları */
+[data-theme='watermelon'] .bg-secondary.bg-opacity-50 {
+  background-color: rgba(245, 218, 210, 0.4) !important;
+  border: 1px solid rgba(200, 213, 200, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+/* Watermelon temasında text renkleri - contrast iyileştirmesi */
+[data-theme='watermelon'] .text-primary {
+  color: #2A3E2A !important;
+}
+
+[data-theme='watermelon'] .text-secondary {
+  color: #3A4E3A !important;
 }

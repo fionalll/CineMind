@@ -149,7 +149,7 @@ const LoginRegister: React.FC<LoginRegisterProps> = ({ onSuccess }) => {
       <div className="max-w-md w-full">
         {/* Logo/Brand */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">🎬 CineMind</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">� CinePop</h1>
           <p className="text-gray-300">Akıllı Film Öneri Platformu</p>
         </div>
 

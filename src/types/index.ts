@@ -1,3 +1,20 @@
+export interface FilmOneri {
+  id: string;
+  gonderenKullaniciId: string;
+  gonderenKullaniciAdi: string;
+  alanKullaniciId: string;
+  alanKullanici?: {
+    avatar?: string;
+    displayName?: string;
+  };
+  filmId: string;
+  filmAdi: string;
+  filmPosterUrl?: string;
+  notMetni?: string;
+  geriYanit?: string;
+  durum: 'bekliyor' | 'okundu' | 'reddedildi' | 'listeye_eklendi' | 'yanitlandi';
+  olusturulmaTarihi: any;
+}
 export interface Movie {
   id: number;
   title: string;
@@ -12,6 +29,17 @@ export interface Movie {
   reason?: string; // Gemini'den gelen öneri sebebi
   watchedAt?: Date; // İzlenme tarihi
   media_type?: 'movie' | 'tv' | 'person';
+}
+
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: 'yeni_oneri' | 'yeni_yanit';
+  message: string;
+  isRead: boolean;
+  createdAt: any; // Veya daha spesifik bir Firebase Timestamp tipi
+  relatedOneriId?: string;
 }
 
 export interface Person {
@@ -54,6 +82,9 @@ export interface SearchResult {
   knownForDepartment?: string;
 }
 
+
+
+
 export interface Genre {
   id: number;
   name: string;
@@ -82,9 +113,11 @@ export interface ChatMessage {
 }
 
 export interface RecommendationResponse {
-  message: string;
-  movies: Movie[];
-  originalQuery: string;
+  message?: string;
+  movies?: Movie[];
+  originalQuery?: string;
+  status?: 'clarification';
+  question?: string;
 }
 
 export interface ApiError {

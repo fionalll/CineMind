@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { auth } from '../firebase/config';
-import type { RecommendationResponse, ApiError, MovieResponse, Genre, SearchResponse } from '../types';
+import type { RecommendationResponse, ApiError, MovieResponse, Genre, SearchResponse,ChatMessage } from '../types';
 
 const API_BASE_URL = 'http://localhost:5002/api';
 
@@ -35,14 +35,16 @@ api.interceptors.request.use(
 );
 
 export const movieService = {
-  async getRecommendations(message: string, excludedTitles?: string[]): Promise<RecommendationResponse> {
+  async getRecommendations(message: string, history: ChatMessage[]): Promise<RecommendationResponse> {
     try {
       const response = await api.post<RecommendationResponse>('/get-recommendations', {
+        // YENİ: Backend'e artık hem son mesajı hem de tüm geçmişi gönderiyoruz.
         message,
-        excludedTitles: excludedTitles || []
+        history
       });
       return response.data;
     } catch (error) {
+      // Bu hata yönetimi kısmı zaten doğru ve aynı kalabilir.
       if (axios.isAxiosError(error)) {
         const errorData = error.response?.data as ApiError;
         throw new Error(errorData?.error || 'Sunucu hatası oluştu');

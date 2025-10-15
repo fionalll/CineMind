@@ -409,19 +409,14 @@ const UserProfilePage: React.FC = () => {
                 {/* Avatar */}
                 <div className="flex-shrink-0">
                   {(() => {
-                    console.log('Avatar Debug:', { isOwnProfile, avatar, profileDataAvatar: profileData?.avatar });
-                    
+                    // Kendi profilimiz için avatar
                     if (isOwnProfile && avatar) {
-                      // Kendi profilimiz için avatar ID'sini kullan
                       if (avatar.startsWith('color_')) {
                         const colorAvatar = COLOR_AVATARS.find(a => a.id === avatar);
                         return (
-                          <div 
+                          <div
                             className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold border-2"
-                            style={{ 
-                              backgroundColor: colorAvatar?.value || '#60A5FA',
-                              borderColor: 'var(--primary)'
-                            }}
+                            style={{ backgroundColor: colorAvatar?.value || '#60A5FA', borderColor: 'var(--primary)' }}
                           >
                             {currentUser?.displayName?.charAt(0).toUpperCase() || 'U'}
                           </div>
@@ -429,7 +424,7 @@ const UserProfilePage: React.FC = () => {
                       } else if (avatar.startsWith('animal_')) {
                         const animalAvatar = ANIMAL_AVATARS.find(a => a.id === avatar);
                         return (
-                          <img 
+                          <img
                             src={animalAvatar?.src || '/avatars/bear.png'}
                             alt={animalAvatar?.name || 'Avatar'}
                             className="w-24 h-24 rounded-full object-cover border-2"
@@ -437,28 +432,60 @@ const UserProfilePage: React.FC = () => {
                             onError={(e) => console.error('Avatar yükleme hatası:', e)}
                           />
                         );
+                      } else {
+                        // Eğer doğrudan bir resim URL'si ise
+                        return (
+                          <img
+                            src={avatar}
+                            alt={currentUser?.displayName || 'Avatar'}
+                            className="w-24 h-24 rounded-full object-cover border-2"
+                            style={{ borderColor: 'var(--primary)' }}
+                            onError={(e) => console.error('Avatar yükleme hatası:', e)}
+                          />
+                        );
                       }
-                    } else if (!isOwnProfile && profileData?.avatar) {
-                      // Başka kullanıcının profili için avatar
-                      return (
-                        <img 
-                          src={profileData.avatar}
-                          alt={profileData.displayName}
-                          className="w-24 h-24 rounded-full object-cover border-2"
-                          style={{ borderColor: 'var(--primary)' }}
-                          onError={(e) => console.error('Profil avatar yükleme hatası:', e)}
-                        />
-                      );
                     }
-                    
+                    // Diğer kullanıcının profili için avatar
+                    if (!isOwnProfile && profileData?.avatar) {
+                      if (profileData.avatar.startsWith('color_')) {
+                        const colorAvatar = COLOR_AVATARS.find(a => a.id === profileData.avatar);
+                        return (
+                          <div
+                            className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold border-2"
+                            style={{ backgroundColor: colorAvatar?.value || '#60A5FA', borderColor: 'var(--primary)' }}
+                          >
+                            {profileData.displayName?.charAt(0).toUpperCase() || 'U'}
+                          </div>
+                        );
+                      } else if (profileData.avatar.startsWith('animal_')) {
+                        const animalAvatar = ANIMAL_AVATARS.find(a => a.id === profileData.avatar);
+                        return (
+                          <img
+                            src={animalAvatar?.src || '/avatars/bear.png'}
+                            alt={animalAvatar?.name || 'Avatar'}
+                            className="w-24 h-24 rounded-full object-cover border-2"
+                            style={{ borderColor: 'var(--primary)' }}
+                            onError={(e) => console.error('Profil avatar yükleme hatası:', e)}
+                          />
+                        );
+                      } else {
+                        // Eğer doğrudan bir resim URL'si ise
+                        return (
+                          <img
+                            src={profileData.avatar}
+                            alt={profileData.displayName || 'Avatar'}
+                            className="w-24 h-24 rounded-full object-cover border-2"
+                            style={{ borderColor: 'var(--primary)' }}
+                            onError={(e) => console.error('Profil avatar yükleme hatası:', e)}
+                          />
+                        );
+                      }
+                    }
                     // Fallback: Baş harf göster
                     return (
-                      <div 
+                      <div
                         className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold border-2"
-                        style={{ 
-                          background: 'linear-gradient(135deg, var(--primary), var(--accent))',
-                          borderColor: 'var(--primary)'
-                        }}
+                        style={{ background: 'linear-gradient(135deg, var(--primary), var(--accent))', borderColor: 'var(--primary)' }}
                       >
                         {isOwnProfile ? (currentUser?.displayName?.charAt(0).toUpperCase() || 'U') : (profileData?.displayName?.charAt(0).toUpperCase() || 'U')}
                       </div>
@@ -818,13 +845,19 @@ const UserProfilePage: React.FC = () => {
                     {filmOnerileri.map(oneri => (
                       <li key={oneri.id} className="p-4 bg-background-tertiary rounded shadow">
                         <div className="flex items-center gap-4">
-                          {oneri.filmPosterUrl ? (
-                            <img src={oneri.filmPosterUrl} alt={oneri.filmAdi} className="w-16 h-24 object-cover rounded" />
-                          ) : (
-                            <div className="w-16 h-24 bg-gray-300 flex items-center justify-center rounded text-xs">Poster Yok</div>
-                          )}
+                          {(() => {
+                            if (oneri.filmPosterUrl) {
+                              return <img src={oneri.filmPosterUrl} alt={oneri.filmAdi || oneri.title} className="w-16 h-24 object-cover rounded" />;
+                            }
+                            if (oneri.posterPath) {
+                              // Eğer tam URL değilse TMDB URL ile birleştir
+                              const isFullUrl = oneri.posterPath.startsWith('http');
+                              return <img src={isFullUrl ? oneri.posterPath : `https://image.tmdb.org/t/p/w500${oneri.posterPath}`} alt={oneri.filmAdi || oneri.title} className="w-16 h-24 object-cover rounded" />;
+                            }
+                            return <div className="w-16 h-24 bg-gray-300 flex items-center justify-center rounded text-xs">Poster Yok</div>;
+                          })()}
                           <div>
-                            <div className="font-bold text-lg">{oneri.filmAdi}</div>
+                            <div className="font-bold text-lg">{oneri.filmAdi || oneri.title}</div>
                             <div className="text-sm text-secondary">Not: {oneri.notMetni || 'Yorum yok'}</div>
                             <div className="text-xs text-gray-500">Durum: {oneri.durum}</div>
                           </div>

@@ -2,6 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ANIMAL_AVATARS, COLOR_AVATARS } from '../config/avatars';
+import { api } from '../services/api';
+
+
+interface Notification {
+  id: string;
+  type: string;
+  message: string;
+}
 
 interface NavbarProps {
   onToggleSidebar?: () => void;
@@ -9,11 +17,40 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
   const { currentUser, logout, avatar, username } = useAuth();
+  const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const location = useLocation();
-  const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Bildirimler için state ve fonksiyonlar
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  useEffect(() => {
+    console.log("--- NAVBAR useEffect ÇALIŞTI ---");
+    console.log("Mevcut kullanıcı (currentUser):", currentUser);
+
+    if (currentUser) {
+        console.log("Kullanıcı mevcut. Bildirimler çekiliyor...");
+    const fetchNotifications = async () => {
+      try {
+        const response = await api.get<Notification[]>('/notifications', {
+          headers: { 'x-user-id': currentUser.uid }
+        });
+        console.log("API'den gelen bildirimler:", response.data);
+        setNotifications(response.data);
+      } catch (error) {
+        console.error("Bildirimler çekilirken HATA:", error);
+      }
+    };
+        fetchNotifications();
+        const intervalId = setInterval(fetchNotifications, 30000);
+        return () => clearInterval(intervalId);
+    } else {
+        console.log("Kullanıcı henüz yok. Bildirimler çekilmedi.");
+    }
+  }, [currentUser]);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -40,6 +77,38 @@ const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
       }
     }
   };
+
+  // Bildirim zili tıklama fonksiyonu
+  const handleBellClick = () => {
+    setShowNotifications((prev) => !prev);
+  };
+
+  // Bildirim silme fonksiyonu
+  const handleDeleteNotification = async (notificationId: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Bu, "x"e basınca arkadaki li'nin tıklanmasını engeller
+    try {
+        await api.delete(`/notifications/${notificationId}`);
+        // Bildirimi anında ekrandan kaldır
+        setNotifications(prevNotifications => 
+            prevNotifications.filter(notif => notif.id !== notificationId)
+        );
+    } catch (error) {
+        console.error("Bildirim silinemedi:", error);
+    }
+  };
+
+  // Tüm bildirimleri silme fonksiyonu
+  const handleDeleteAllNotifications = async () => {
+    try {
+        await api.post('/notifications/delete-all');
+        // Tüm bildirimleri anında ekrandan temizle
+        setNotifications([]);
+    } catch (error) {
+        console.error("Tüm bildirimler silinemedi:", error);
+    }
+  };
+
+  
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -73,11 +142,15 @@ const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
                 </svg>
               </button>
             )}
-            <Link to="/" className="flex items-center space-x-2 text-xl font-bold">
-              <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
-                <span className="text-primary font-bold text-lg">🎬</span>
+            <Link to="/" className="flex items-center space-x-3 text-xl font-bold">
+              <div className="w-12 h-12 flex items-center justify-center">
+                <img 
+                  src="/avatars/logo-popcorn .png" 
+                  alt="CinePop Logo" 
+                  className="w-10 h-10 object-contain"
+                />
               </div>
-              <span className="hidden sm:inline text-primary">CineMind</span>
+              <span className="hidden sm:inline text-primary">CinePop</span>
             </Link>
           </div>
 
@@ -177,6 +250,64 @@ const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
                 İzlediklerim
               </Link>
             </div>
+
+            {/* Bildirim Zili ve Menüsü - kullanıcı menüsünden hemen önce */}
+            {currentUser && (
+              <div className="relative">
+                  <button onClick={handleBellClick} className="relative p-2 rounded-full hover:bg-secondary transition-colors" title="Bildirimler">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                      </svg>
+                      {notifications.length > 0 && (
+                          <span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-primary"></span>
+                      )}
+                  </button>
+                  {showNotifications && (
+            <div className="absolute right-0 mt-2 w-80 bg-secondary rounded-lg shadow-xl z-20 animate-fade-in-up">
+              <div className="p-3 font-bold text-primary border-b border-tertiary flex justify-between items-center">
+                <span>Bildirimler</span>
+                <button 
+                  onClick={handleDeleteAllNotifications}
+                  className="text-xs font-normal text-secondary hover:text-primary transition-colors"
+                  title="Tümünü sil"
+                >
+                  Tümünü Sil
+                </button>
+              </div>
+                          {notifications.length > 0 ? (
+                              <ul className="max-h-96 overflow-y-auto">
+                                {notifications.map((notif) => (
+                                  <li 
+                                    key={notif.id} 
+                                    onClick={() => {
+                                      navigate('/hesabim');
+                                      setShowNotifications(false);
+                                    }}
+                                    className="p-3 border-b border-tertiary text-sm text-secondary hover:bg-tertiary cursor-pointer flex items-center justify-between gap-3 group"
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-xl">{notif.type === 'yeni_oneri' ? '🚀' : '💬'}</span>
+                                      <span>{notif.message}</span>
+                                    </div>
+                                    <button 
+                                      onClick={(e) => handleDeleteNotification(notif.id, e)}
+                                      className="text-lg text-secondary opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all"
+                                      title="Bu bildirimi sil"
+                                    >
+                                      &times;
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                          ) : (
+                              <div className="p-4 text-center text-sm text-secondary">
+                                  Okunacak yeni bildirim yok.
+                              </div>
+                          )}
+                      </div>
+                  )}
+              </div>
+            )}
 
             {/* User menu */}
             <div className="relative" ref={menuRef}>

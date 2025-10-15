@@ -10,6 +10,8 @@ import SettingsModal from '../components/SettingsModal';
 import { api } from '../services/api';
 import FilmOneriListesi from '../components/FilmOneriListesi';
 import OneriDetayModal from '../components/OneriDetayModal';
+import GelenYanitlarListesi from '../components/GelenYanitlarListesi';
+import type { FilmOneri } from '../types';
 
 const HesabimPage: React.FC = () => {
   const navigate = useNavigate();   
@@ -49,7 +51,9 @@ const HesabimPage: React.FC = () => {
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState('');
-
+  const [gelenYanitlar, setGelenYanitlar] = useState<FilmOneri[]>([]);
+  const [yanitlarLoading, setYanitlarLoading] = useState(false);
+  const [seciliYanit, setSeciliYanit] = useState<FilmOneri | null>(null);
   
 
 
@@ -63,17 +67,7 @@ const HesabimPage: React.FC = () => {
   }
 
 
-  interface FilmOneri {
-    id: string; // Firebase'den gelen döküman ID'si
-    gonderenKullaniciAdi: string;
-    gonderenKullaniciAvatar?: string;
-    filmId: string;
-    filmAdi: string;
-    filmPosterUrl?: string; // Detay panelinde göstereceğiz
-    notMetni?: string;
-    durum: 'bekliyor' | 'okundu' | 'reddedildi';
-    olusturulmaTarihi: any; // Firebase timestamp'i için 'any' veya daha spesifik bir tip
-  }
+  // FilmOneri tipi artık types dosyasından import ediliyor
   const [filmOnerileri, setFilmOnerileri] = useState<FilmOneri[]>([]);
   const [onerilerLoading, setOnerilerLoading] = useState(false);
   const [seciliOneri, setSeciliOneri] = useState<FilmOneri | null>(null);
@@ -168,6 +162,26 @@ const handleTesekkurEt = async (oneri: FilmOneri) => {
     }, 300);
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, isSearching]);
+
+
+  useEffect(() => {
+    if (!currentUser) return; // Kullanıcı girişi yoksa bir şey yapma
+
+    const fetchGelenYanitlar = async () => {
+        setYanitlarLoading(true); // Yükleniyor durumunu başlat
+        try {
+            // Backend'de oluşturduğumuz yeni endpoint'i çağırıyoruz
+            const response = await api.get<FilmOneri[]>(`/users/${currentUser.uid}/gelen-yanitlar`);
+            setGelenYanitlar(response.data); // Gelen veriyi yeni state'e ata
+        } catch (error) {
+            console.error("Gelen yanıtlar alınamadı:", error);
+        } finally {
+            setYanitlarLoading(false); // Yükleniyor durumunu bitir
+        }
+    };
+
+    fetchGelenYanitlar();
+}, [currentUser])
 
   // === DÜZELTİLMİŞ BÖLÜM SONU ===
     // === YENİ useEffect - Film Önerilerini Çeker ===
@@ -426,29 +440,29 @@ useEffect(() => {
 
   return (
     <div>
-      <div className="min-h-screen bg-primary">
+      <div className="h-screen bg-primary overflow-hidden">
         <Navbar />
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-4 h-full">
           <BackButton />
         
-        {/* Ana Panel - Tek Büyük Konteyner */}
-        <div className="card-bg rounded-xl p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
+        {/* Ana Panel - Tek Büyük Konteyner - Viewport height kullan */}
+        <div className="card-bg rounded-xl p-6 grid grid-cols-1 lg:grid-cols-[1fr_2fr_1fr] gap-6 mt-4 h-[calc(100vh-180px)]">
           
           {/* Sol Sütun: Profil Bilgileri */}
           <div className="lg:col-span-1">
-            <div className="text-center lg:text-left mb-6">
-              <h2 className="text-3xl font-bold text-primary mb-6">Profil Bilgileri</h2>
+            <div className="text-center lg:text-left mb-4">
+              <h2 className="text-2xl font-bold text-primary mb-4">Profil Bilgileri</h2>
               
-              <div className="flex flex-col lg:flex-row items-center lg:items-center gap-6">
+              <div className="flex flex-col lg:flex-row items-center lg:items-center gap-4">
                 {/* Avatar gösterimi - Daha büyük */}
                 <div className="flex-shrink-0 lg:mr-6">
                   <div className="mb-4 relative group cursor-pointer" onClick={() => setShowSettingsModal(true)}>
                     {avatar && avatar.startsWith('color_') ? (
                       <div
-                        className="w-32 h-32 rounded-full border-4 border-accent flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
+                        className="w-20 h-20 rounded-full border-3 border-accent flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
                     style={{ backgroundColor: COLOR_AVATARS.find(a => a.id === avatar)?.value || '#ffffffff' }}
                   >
-                    <span className="text-white text-2xl font-bold">
+                    <span className="text-white text-lg font-bold">
                       {currentUser?.displayName?.[0]?.toUpperCase() || 'U'}
                     </span>
                   </div>
@@ -456,11 +470,11 @@ useEffect(() => {
                   <img
                     src={ANIMAL_AVATARS.find(a => a.id === avatar)?.src || '/avatars/bear.png'}
                     alt="Avatar"
-                    className="w-24 h-24 rounded-full border-4 border-accent mx-auto object-cover transition-transform duration-200 group-hover:scale-105"
+                    className="w-20 h-20 rounded-full border-3 border-accent mx-auto object-cover transition-transform duration-200 group-hover:scale-105"
                   />
                 ) : (
-                  <div className="w-24 h-24 rounded-full border-4 border-accent flex items-center justify-center bg-secondary mx-auto transition-transform duration-200 group-hover:scale-105">
-                    <span className="text-primary text-2xl font-bold">
+                  <div className="w-20 h-20 rounded-full border-3 border-accent flex items-center justify-center bg-secondary mx-auto transition-transform duration-200 group-hover:scale-105">
+                    <span className="text-primary text-lg font-bold">
                       {currentUser?.displayName?.[0]?.toUpperCase() || 'U'}
                     </span>
                   </div>
@@ -480,34 +494,34 @@ useEffect(() => {
 
               {/* Kullanıcı Bilgileri - Tamamen yeniden tasarlandı */}
               <div className="flex-1 text-center lg:text-left">
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div>
-                    <h3 className="text-2xl font-bold text-primary mb-2">
+                    <h3 className="text-xl font-bold text-primary mb-1">
                       {currentUser?.displayName || 'Kullanıcı'}
                     </h3>
-                    <p className="text-lg text-secondary mb-4">{currentUser?.email}</p>
+                    <p className="text-sm text-secondary mb-3">{currentUser?.email}</p>
                   </div>
 
-                  <div className="bg-secondary rounded-lg p-3 w-64">
+                  <div className="bg-secondary rounded-lg p-2 w-full">
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">📊</span>
+                      <span className="text-sm">📊</span>
                       <div>
-                        <h4 className="font-semibold text-primary text-sm">Hesap Durumu</h4>
+                        <h4 className="font-semibold text-primary text-xs">Hesap Durumu</h4>
                         <p className="text-xs text-secondary">Aktif üyelik</p>
                       </div>
                     </div>
                   </div>
                   
                   {/* Ayarlar Butonları - Kompakt */}
-                  <div className="space-y-3 mt-6 max-w-sm">
+                  <div className="space-y-2 mt-4 max-w-sm">
                     {/* Görünümü Kişiselleştir Butonu - Küçük */}
                     <button
                       onClick={() => setShowSettingsModal(true)}
-                      className="w-64 bg-secondary hover:bg-accent hover:bg-opacity-20 border border-default hover:border-accent p-3 rounded-lg transition-all duration-200 flex items-center gap-3 group"
+                      className="w-full bg-secondary hover:bg-accent hover:bg-opacity-20 border border-default hover:border-accent p-2 rounded-lg transition-all duration-200 flex items-center gap-2 group"
                     >
-                      <div className="text-xl group-hover:scale-110 transition-transform duration-200">🎨</div>
+                      <div className="text-sm group-hover:scale-110 transition-transform duration-200">🎨</div>
                       <div className="text-left">
-                        <div className="text-sm font-semibold text-primary">Görünümü Kişiselleştir</div>
+                        <div className="text-xs font-semibold text-primary">Görünümü Kişiselleştir</div>
                         <div className="text-xs text-secondary">Tema ve avatar ayarları</div>
                       </div>
                     </button>
@@ -515,11 +529,11 @@ useEffect(() => {
                     {/* Hesap Ayarları Butonu - Küçük */}
                     <button
                       onClick={() => setShowAccountSettings(true)}
-                      className="w-64 bg-secondary hover:bg-accent hover:bg-opacity-20 border border-default hover:border-accent p-3 rounded-lg transition-all duration-200 flex items-center gap-3 group"
+                      className="w-full bg-secondary hover:bg-accent hover:bg-opacity-20 border border-default hover:border-accent p-2 rounded-lg transition-all duration-200 flex items-center gap-2 group"
                     >
-                      <div className="text-xl group-hover:scale-110 transition-transform duration-200">⚙️</div>
+                      <div className="text-sm group-hover:scale-110 transition-transform duration-200">⚙️</div>
                       <div className="text-left">
-                        <div className="text-sm font-semibold text-primary">Hesap Ayarları</div>
+                        <div className="text-xs font-semibold text-primary">Hesap Ayarları</div>
                         <div className="text-xs text-secondary">Kullanıcı bilgileri ve güvenlik</div>
                       </div>
                     </button>
@@ -527,15 +541,15 @@ useEffect(() => {
                     {/* İzlenen Filmler Butonu - En altta */}
                     <button
                       onClick={() => navigate('/watched-movies')}
-                      className="w-64 bg-secondary hover:bg-accent hover:bg-opacity-20 border border-default hover:border-accent p-3 rounded-lg transition-all duration-200 flex items-center gap-2 group"
+                      className="w-full bg-secondary hover:bg-accent hover:bg-opacity-20 border border-default hover:border-accent p-2 rounded-lg transition-all duration-200 flex items-center gap-2 group"
                     >
-                      <div className="text-xl group-hover:scale-110 transition-transform duration-200">🎬</div>
+                      <div className="text-lg group-hover:scale-110 transition-transform duration-200">🎬</div>
                       <div className="text-left flex-1">
-                        <div className="text-sm font-semibold text-primary">İzlenen Filmler</div>
+                        <div className="text-xs font-semibold text-primary">İzlenen Filmler</div>
                         <div className="text-xs text-secondary">Film geçmişinizi görüntüleyin</div>
                       </div>
                       <div className="text-right">
-                        <span className="text-sm font-bold text-accent">{watchedMovies.length}</span>
+                        <span className="text-xs font-bold text-accent">{watchedMovies.length}</span>
                       </div>
                     </button>
                   </div>
@@ -545,12 +559,32 @@ useEffect(() => {
           </div>
           
           {/* Orta Sütun: Film Öneri Listesi */}
+          {/* ========================================================== */}
+          {/*         YENİ, İKİYE BÖLÜNMÜŞ ORTA SÜTUN          */}
+          {/* ========================================================== */}
+          {/* Orta Sütun Ana Konteyneri */}
           <div className="lg:col-span-1">
-            <FilmOneriListesi
-              oneriler={filmOnerileri}
-              loading={onerilerLoading}
-              onOneriClick={(oneri: FilmOneri) => setSeciliOneri(oneri)}
-            />
+            {/* İç Grid: Bu grid, orta sütunu ikiye böler */}
+            <div className="grid grid-cols-2 gap-4 h-full">
+              {/* Sol Yarısı: Gelen Film Önerileri */}
+              <div className="col-span-1">
+                <FilmOneriListesi
+                  oneriler={filmOnerileri}
+                  loading={onerilerLoading}
+                  onOneriClick={(oneri: FilmOneri) => setSeciliOneri(oneri)}
+                />
+              </div>
+              {/* Sağ Yarısı: Gelen Yanıtlar */}
+              <div className="col-span-1">
+                <div className="h-64 overflow-y-auto">
+                  <GelenYanitlarListesi 
+                    yanitlar={gelenYanitlar} 
+                    loading={yanitlarLoading}
+                    onYanitClick={(yanit) => setSeciliYanit(yanit)}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Sağ Sütun: Takipçiler ve Takip Edilenler */}
@@ -577,7 +611,7 @@ useEffect(() => {
       <div className="mt-4 space-y-2 max-h-48 overflow-y-auto">
         {searchLoading && <p className="text-sm text-center text-text-secondary">Aranıyor...</p>}
         {!searchLoading && searchResults.length > 0 && searchResults.map(user => (
-          <div key={user.uid} onClick={() => handleUserClick(user)} className="flex items-center p-2 rounded hover:bg-background-tertiary cursor-pointer">
+          <div key={user.uid || user.username || user.displayName || Math.random()} onClick={() => handleUserClick(user)} className="flex items-center p-2 rounded hover:bg-background-tertiary cursor-pointer">
             {renderUserAvatar(user)}
             <div className="ml-3">
               <p className="font-semibold text-primary">{user.displayName}</p>
@@ -620,7 +654,7 @@ useEffect(() => {
                     <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
                       {followers.map((follower: User) => (
                         <div
-                          key={follower.uid}
+                          key={follower.uid || follower.username || follower.displayName || Math.random()}
                           onClick={() => handleUserClick(follower)}
                           className="flex-shrink-0 cursor-pointer group"
                         >
@@ -661,7 +695,7 @@ useEffect(() => {
                     <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
                       {following.map((followedUser: User) => (
                         <div
-                          key={followedUser.uid}
+                          key={followedUser.uid || followedUser.username || followedUser.displayName || Math.random()}
                           onClick={() => handleUserClick(followedUser)}
                           className="flex-shrink-0 cursor-pointer group"
                         >
@@ -1096,6 +1130,16 @@ useEffect(() => {
           onReddet={handleReddet}
           onTesekkurEt={handleTesekkurEt}
           onListeyeEkle={handleIzlemeListesineEkle}
+          viewMode="alici"
+        />
+      
+      )}
+      {seciliYanit && (
+        <OneriDetayModal
+          oneri={seciliYanit}
+          onClose={() => setSeciliYanit(null)}
+          viewMode="gonderen" // Bu ise "gönderen" modunda çalışacak
+          // Bu modda diğer fonksiyonlara ihtiyacımız olmadığı için göndermiyoruz
         />
       )}
     </div>

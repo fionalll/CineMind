@@ -14,6 +14,7 @@ import UserProfilePage from './pages/UserProfilePage';
 import SearchResultsPage from './pages/SearchResultsPage';
 import PersonCreditsPage from './pages/PersonCreditsPage';
 import RandomEpisodePage from './pages/RandomEpisodePage';
+import MovieDetailsPage from './pages/MovieDetailsPage';
 import LoginRegister from './components/LoginRegister';
 import TestPage from './pages/TestPage';
 
@@ -42,6 +43,7 @@ const AppContent = () => {
                 <Route path="/test" element={<TestPage />} />
                 <Route path="/search" element={<SearchResultsPage />} />
                 <Route path="/person/:personId" element={<PersonCreditsPage />} />
+                <Route path="/movie/:id" element={<MovieDetailsPage />} />
               </Routes>
             </div>
           </Router>

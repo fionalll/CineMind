@@ -71,13 +71,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const userData = userDoc.data();
             setAvatar(userData.avatar || null);
             setUsername(userData.username || null);
+            console.log("✅ Kullanıcı verisi Firestore'dan yüklendi:", userData);
           } else {
-            // Firestore'da henüz kullanıcının dokümanı yoksa (yeni kayıt olmuş olabilir)
-            // avatarı ve username'i null olarak ayarla.
-            setAvatar(null);
-            setUsername(null);
+            // Firestore'da henüz kullanıcının dokümanı yoksa oluştur
+            console.log("📝 Kullanıcı dokümanı bulunamadı, oluşturuluyor...");
+            const newUserData = {
+              uid: user.uid,
+              email: user.email,
+              displayName: user.displayName || '',
+              avatar: null,
+              username: null,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            };
+            
+            try {
+              await setDoc(userDocRef, newUserData);
+              console.log("✅ Kullanıcı dokümanı oluşturuldu");
+              setAvatar(null);
+              setUsername(null);
+            } catch (createError) {
+              console.error("❌ Kullanıcı dokümanı oluşturulamadı:", createError);
+              setAvatar(null);
+              setUsername(null);
+            }
           }
         } catch (error) {
+          console.error("❌ Kullanıcı verisi Firestore'dan yüklenirken hata:", error);
+          
+          // Firestore'dan yüklenemiyorsa localStorage'dan dene
+          try {
+            const localAvatar = localStorage.getItem(`avatar_${user.uid}`);
+            if (localAvatar) {
+              setAvatar(localAvatar);
+              console.log("✅ Avatar localStorage'dan yüklendi:", localAvatar);
+            } else {
+              setAvatar(null);
+            }
+          } catch (localError) {
+            console.error("❌ localStorage'dan avatar yüklenemedi:", localError);
+            setAvatar(null);
+          }
+          
+          setUsername(null);
         }
       } else {
         // Eğer kullanıcı ÇIKIŞ YAPMIŞSA, avatarı ve username'i temizle.
@@ -130,14 +166,56 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const updateAvatar = async (newAvatar: string) => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      console.warn("Avatar güncellenemedi: Kullanıcı oturumu bulunamadı");
+      return;
+    }
+    
+    console.log("Avatar güncelleniyor:", newAvatar, "Kullanıcı UID:", currentUser.uid);
+    
     try {
-      await setDoc(doc(db, 'users', currentUser.uid), { avatar: newAvatar }, { merge: true });
-      // State'i anında güncelle
+      // State'i önce güncelle (optimistic update)
       setAvatar(newAvatar);
-    } catch (error) {
-      console.error("Avatar güncellenirken hata:", error);
-      throw error; // Hatayı bileşene de bildir
+      
+      // Geçici olarak localStorage'a da kaydet (fallback)
+      localStorage.setItem(`avatar_${currentUser.uid}`, newAvatar);
+      
+      // Firestore'a yazma izni kontrol et
+      if (!db) {
+        console.warn("Firestore mevcut değil, sadece localStorage kullanılıyor");
+        console.log("✅ Avatar localStorage'a kaydedildi:", newAvatar);
+        return;
+      }
+      
+      // Kullanıcı dokümanı varlığını kontrol et
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      
+      // Avatar'ı güncelle
+      await setDoc(userDocRef, { 
+        avatar: newAvatar,
+        updatedAt: new Date(),
+        uid: currentUser.uid,
+        email: currentUser.email
+      }, { merge: true });
+      
+      console.log("✅ Avatar başarıyla Firestore'a kaydedildi:", newAvatar);
+      
+    } catch (error: any) {
+      console.error("❌ Avatar Firestore'a kaydedilirken hata:", error);
+      
+      // Firestore hatası olsa bile localStorage'da tutmaya devam et
+      localStorage.setItem(`avatar_${currentUser.uid}`, newAvatar);
+      console.log("⚠️ Avatar sadece localStorage'a kaydedildi (Firestore hatası)");
+      
+      // Sadece kritik hatalar için kullanıcıyı uyar
+      if (error.code === 'unauthenticated') {
+        alert("Oturum süreniz dolmuş. Lütfen yeniden giriş yapın.");
+        await logout();
+        return;
+      }
+      
+      // Diğer hatalar için console'da bırak, kullanıcıyı rahatsız etme
+      console.warn("Avatar seçimi geçici olarak yerel depolamada saklandı.");
     }
   };
 

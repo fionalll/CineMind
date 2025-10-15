@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { Movie } from '../types';
 import WatchButton from './WatchButton';
 import WatchlistButton from './WatchlistButton';
@@ -25,7 +26,7 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
   };
 
   return (
-    <div className="movie-card group flex flex-col h-full">
+    <Link to={`/movie/${movie.id}`} className="movie-card group flex flex-col h-full block hover:scale-105 transition-transform duration-200">
       {/* Movie Poster */}
       <div className="relative aspect-[2/3]" style={{ backgroundColor: 'var(--background-tertiary)' }}>
         {movie.posterPath && !imageError ? (
@@ -117,7 +118,7 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 };
 

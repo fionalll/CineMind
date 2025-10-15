@@ -141,38 +141,40 @@ const Sidebar = ({ onGenreSelect, selectedGenre, type = 'movie' }: SidebarProps)
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="animate-pulse space-y-4">
-          {[...Array(10)].map((_, index) => (
-            <div key={index} className="h-10 card-bg rounded-lg"></div>
-          ))}
+      <div className="h-full sidebar-bg">
+        <div className="p-6">
+          <div className="animate-pulse space-y-4">
+            {[...Array(10)].map((_, index) => (
+              <div key={index} className="h-12 sidebar-button rounded-lg"></div>
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <h2 className="text-xl font-bold text-primary mb-6">
-        {type === 'tv' ? 'Dizi Türleri' : 'Film Türleri'}
-      </h2>
+    <div className="h-full sidebar-bg">
+      <div className="p-6">
+        <h2 className="text-xl font-bold text-primary mb-6">
+          {type === 'tv' ? 'Dizi Türleri' : 'Film Türleri'}
+        </h2>
 
-      {/* Film/Dizi Türleri - Tek Sütun Liste */}
-      <div className="space-y-3">
-        {genres.map((genre) => (
-          <button
-            key={genre.id}
-            onClick={() => onGenreSelect(genre)}
-            className={`w-full flex items-center space-x-2 px-4 py-3 rounded-lg text-base font-medium transition-colors duration-200 ${
-              selectedGenre?.id === genre.id 
-                ? 'bg-primary text-white' 
-                : 'bg-secondary text-secondary hover:bg-tertiary hover:text-primary'
-            }`}
-          >
-            <div className="text-lg flex items-center justify-center w-5 h-5">{getGenreIcon(genre.name)}</div>
-            <span>{getLocalizedGenreName(genre.name)}</span>
-          </button>
-        ))}
+        {/* Film/Dizi Türleri - Tek Sütun Liste */}
+        <div className="space-y-3">
+          {genres.map((genre) => (
+            <button
+              key={genre.id}
+              onClick={() => onGenreSelect(genre)}
+              className={`w-full flex items-center space-x-2 px-4 py-3 text-base font-medium transition-colors duration-200 sidebar-button rounded-lg ${
+                selectedGenre?.id === genre.id ? 'active' : ''
+              }`}
+            >
+              <div className="text-lg flex items-center justify-center w-5 h-5">{getGenreIcon(genre.name)}</div>
+              <span>{getLocalizedGenreName(genre.name)}</span>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

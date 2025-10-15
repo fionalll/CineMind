@@ -1,18 +1,5 @@
 import React from 'react';
-
-// HesabimPage'de tanımladığımız FilmOneri tipini buraya da alıyoruz.
-// Projenin yapısına göre bunu ortak bir types dosyasından da import edebilirsin.
-interface FilmOneri {
-  id: string;
-  gonderenKullaniciAdi: string;
-  gonderenKullaniciAvatar?: string;
-  filmId: string;
-  filmAdi: string;
-  filmPosterUrl?: string;
-  notMetni?: string;
-  durum: 'bekliyor' | 'okundu' | 'reddedildi';
-  olusturulmaTarihi: any;
-}
+import type { FilmOneri } from '../types';
 
 // Bu component'in dışarıdan alacağı bilgilerin (props) tipini tanımlıyoruz.
 interface Props {
@@ -46,11 +33,11 @@ const FilmOneriListesi: React.FC<Props> = ({ oneriler, loading, onOneriClick }) 
       ) : (
         // Öneriler varsa, her birini listele
         <ul className="space-y-2">
-          {oneriler.map((oneri) => (
+          {oneriler.map((oneri, index) => (
             <li 
-              key={oneri.id} 
+              key={oneri.id || oneri.filmId || index} 
               onClick={() => onOneriClick(oneri)}
-              className="bg-primary p-2 rounded-md cursor-pointer hover:bg-accent hover:bg-opacity-20 transition-all duration-200"
+              className="film-oneri-item bg-primary p-2 rounded-md cursor-pointer hover:bg-accent hover:bg-opacity-20 transition-all duration-200"
             >
               <div className="flex justify-between items-center">
                 <span className="font-semibold text-xs text-primary">{oneri.gonderenKullaniciAdi}</span>
